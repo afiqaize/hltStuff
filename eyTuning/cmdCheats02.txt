@@ -1,0 +1,33 @@
+720p8 new L1 with proper tag
+
+hltGetConfiguration /users/afiqaize/SingleEG_dev/NewL1for72X/V15 --full --offline --mc --unprescale --process TURNON --globaltag MCRUN2_72_V3A --paths "HLTriggerFirstPath,HLT_Ele*_Gsf_v*,HLTriggerFinalPath" --l1-emulator 'stage1,gt' --l1Xml L1Menu_Collisions2015_25ns_v1_L1T_Scales_20101224_Imp0_0x102f.xml --input /store/group/phys_top/triggerStudies/path_output/wev_cut1p0.root --max-events 5000 > hlt.py
+
+edmConfigFromDB --cff --configName /dev/CMSSW_7_2_1/HLT/V113 --nopaths --services -PrescaleService > setup_721.py
+
+----------------------------------------
+
+720p6 new L1:
+
+hltGetConfiguration  /users/afiqaize/SingleEG_dev/NewL1for72X/V4 --full --offline --mc --unprescale --process TEST --globaltag auto:upgradePLS1 --l1-emulator 'stage1,gt' --l1Xml L1Menu_Collisions2015_25ns_v1_L1T_Scales_20101224_Imp0_0x102f.xml --output minimal --input /store/group/phys_top/triggerStudies/skims/Wev_newL1for72X.root --max-events -1 --paths "HLTriggerFirstPath,HLT_Ele27_WP85_Gsf_eta2p1_v*,HLT_Ele27_Cut1p0_NewFilt_Gsf_eta2p1_v*,HLT_IsoMu22_IterTrk02_eta2p1_v*,HLTriggerFinalPath" > ey_allNewL1_mc.py
+
+edmConfigFromDB --cff --configName /dev/CMSSW_7_1_2/GRun --nopaths --services -PrescaleService > setup_cff.py
+
+----------------------------------------
+
+711 ey studies:
+
+Find all the setup here:
+
+hltGetConfiguration /users/jfernan2/Prepa2015/CMSSW_7_1_2/ForElectronStudies/V5 --full --offline --mc --unprescale --process TEST --globaltag PRE_LS171_V5A::All --paths "HLTriggerFirstPath,HLT_Ele27_WP80_Gsf_v*,HLT_Ele27_WP80_Gsf_NewDefaultCuts*,HLTriggerFinalPath" --output minimal --input /store/group/phys_top/triggerStudies/skims/ttbar_kelly.root --max-events -1 > ey_newDef_mc.py
+
+hltGetConfiguration /dev/CMSSW_7_1_0/GRun/V53 --full --offline --data --unprescale --process TEST --globaltag auto:hltonline_GRun --paths "HLTriggerFirstPath,HLT_Ele27_WP80_v*,HLTriggerFinalPath" --output minimal --input file:/afs/cern.ch/work/b/beaucero/public/L1EG20SkimOver2012Data4RateStudies/Skim207884_L1EG20OR22.root --max-events -1 > ey_WP80_data.py
+
+edmConfigFromDB --cff --configName /dev/CMSSW_7_1_1/GRun/V64 --nopaths --services -PrescaleService > setup_GRun64_preScale.py
+
+----------------------------------------
+
+mu 713 check:
+
+hltGetConfiguration /dev/CMSSW_7_1_1/GRun/V86 --full --offline --mc --unprescale --process TEST --globaltag PRE_LS171_V5::All --paths "HLTriggerFirstPath,HLT_IsoMu24_IterTrk02_v*,HLT_IsoMu24_eta2p1_v*,HLTriggerFinalPath" --output minimal --input file:/afs/cern.ch/work/a/ajafari/public/forAfiq/singleMuSkim/testfilter_pythia8.root --max-events -1 > IsoMuIterTrk0.py
+
+
