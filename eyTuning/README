@@ -12,3 +12,7 @@ Electron WP Optimization Steps
 
 p/s: Matteo's code plot the original quantity (as in the thrRegular in the filters) so one needs to edit fillHist() (line 99) to handle this correctly
 e.g if you want to draw H/E then line 105 should be 'varVal / eVal'
+
+The mvaPlot code is similar to tunePlot but it now makes use of event weights and assumes the tree has been reduced e.g. by Matteo's reduceOptTree.C [2].
+
+[2] https://github.com/matteosan1/optimizator
