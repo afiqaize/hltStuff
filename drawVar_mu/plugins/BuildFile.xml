@@ -1,0 +1,18 @@
+<flags EDM_PLUGIN="1"/>
+<export>
+</export>
+<library name="drawVarplugins" file="*.cc">
+	<use name="FWCore/Framework"/>
+	<use name="FWCore/PluginManager"/>
+	<use name="FWCore/ParameterSet"/>
+	<use name="clhep"/>
+	<use name="DataFormats/Candidate"/>
+	<use name="DataFormats/Common"/>
+	<use name="FWCore/MessageLogger"/>
+	<use name="FWCore/ServiceRegistry"/>
+	<use name="PhysicsTools/UtilAlgos"/>
+	<use name="HLTrigger/HLTcore"/>
+	<use name="DataFormats/HLTReco"/>
+	<use name="DataFormats/MuonReco"/>
+	<use name="drawHist/drawVar"/>
+</library>
