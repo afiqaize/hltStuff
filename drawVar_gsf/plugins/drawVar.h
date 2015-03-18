@@ -35,8 +35,10 @@
 #include "CommonTools/UtilAlgos/interface/TFileService.h"
 
 #include "TMath.h"
-#include "TH2D.h"
-#include "TH1D.h"
+#include "TFile.h"
+#include "TTree.h"
+#include "Math/VectorUtil.h"
+
 //
 // class declaration
 //
@@ -66,15 +68,18 @@ class drawVar : public edm::EDAnalyzer {
 
   // member data
   edm::EDGetTokenT<edm::View<reco::GsfElectron> > electronCollectionToken;
-  std::map< std::string, TH2D* > histos2D_;
-  std::map< std::string, TH1D* > histos1D_;
+  TTree *tree;
+  TFile *file;
 
   // some parameters
   bool doMatching;
-  std::string pathName, filterName, procName;
+  std::string outFile, pathName, filterName, procName;
   double ptCut, etaCut;
   HLTConfigProvider hltConfig;
   int triggerBit;
+  Int_t nGsf, nPass, nMatch;
+  std::vector<Double_t> ptGsf, ptPass, ptMatch;
+  std::vector<Double_t> etaGsf, etaPass, etaMatch;
     
 };
 

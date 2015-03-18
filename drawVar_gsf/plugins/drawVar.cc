@@ -12,6 +12,7 @@ electronCollectionToken(consumes<edm::View<reco::GsfElectron> >(iConfig.getParam
   etaCut = 9999.;
   
   doMatching = iConfig.getParameter<bool>("doMatching"); 
+  outFile = iConfig.getParameter<std::string>("outFile");
   pathName = iConfig.getParameter<std::string>("pathName");
   filterName = iConfig.getParameter<std::string>("filterName");
   procName = iConfig.getParameter<std::string>("procName");
@@ -40,7 +41,7 @@ drawVar::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 {
     using namespace edm;
     using namespace std;
-    using reco::GsfElectron;
+    using namespace reco;
 
     edm::Handle<GenEventInfoProduct> genEvent;
     iEvent.getByLabel("generator", genEvent);
@@ -66,6 +67,18 @@ drawVar::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 
     trigger::TriggerObjectCollection allTriggerObjects;    
     trigger::TriggerObjectCollection ElectronObjects;
+
+    nGsf = 0;
+    nPass = 0;
+    nMatch = 0;
+
+    ptGsf.clear();
+    ptPass.clear();
+    ptMatch.clear();
+
+    etaGsf.clear();
+    etaPass.clear();
+    etaMatch.clear();
 
     if (doMatching) {
 
@@ -118,60 +131,64 @@ drawVar::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 
       if (isRecoMatchedWithGen(gsfElectron, genParticles)) {
 
-        histos1D_[ "ptElectron_gsf" ]->Fill(gsfElectron->pt());
-        histos1D_[ "etaElectron_gsf" ]->Fill(gsfElectron->superCluster()->eta());
+        nGsf++;
+        ptGsf.push_back( gsfElectron->pt() );
+        etaGsf.push_back( gsfElectron->superCluster()->eta() );
 
         if (doMatching) {
 
           if (triggerResults->accept(triggerBit)) {
 
-            histos1D_[ "ptElectron_pass" ]->Fill(gsfElectron->pt());
-            histos1D_[ "etaElectron_pass" ]->Fill(gsfElectron->superCluster()->eta());
+            nPass++;
+            ptPass.push_back( gsfElectron->pt() );
+            etaPass.push_back( gsfElectron->superCluster()->eta() );
 
           }
 
           if (isRecoMatchedWithTrigger(gsfElectron, ElectronObjects)) {
 
-            histos1D_[ "ptElectron_match" ]->Fill(gsfElectron->pt());
-            histos1D_[ "etaElectron_match" ]->Fill(gsfElectron->superCluster()->eta());
+            nMatch++;
+            ptMatch.push_back( gsfElectron->pt() );
+            etaMatch.push_back( gsfElectron->superCluster()->eta() );
 
           }
         }
       }
     }
+
+    tree->Fill();
+
 }
 
 // ------------ method called once each job just before starting event loop  ------------
 void 
 drawVar::beginJob()
 {
-    edm::Service< TFileService > fileService;
 
-    float ptBins[26] = {0., 5., 10., 15., 20., 25., 30., 32., 34., 36., 38., 40., 42., 44., 46., 48., 50., 55., 60., 70., 80., 90., 110., 130., 150., 200.};
-    
-    histos1D_[ "ptElectron_gsf" ] = fileService->make< TH1D >( "ptElectron_gsf", "nb of electron", 25, ptBins);
-    histos1D_[ "ptElectron_gsf" ]->SetXTitle( "electron p_{T} (GeV)" );
-    
-    histos1D_[ "etaElectron_gsf" ] = fileService->make< TH1D >( "etaElectron_gsf", "nb of electron", 30, -3., 3.);
-    histos1D_[ "etaElectron_gsf" ]->SetXTitle( "electron #eta" );
+    file = new TFile(outFile.c_str(), "recreate");
+    tree = new TTree("gsfElectron", "gsfElectron");
 
-    histos1D_[ "ptElectron_pass" ] = fileService->make< TH1D >( "ptElectron_pass", "nb of electron passing", 25, ptBins);
-    histos1D_[ "ptElectron_pass" ]->SetXTitle( "electron p_{T} (GeV)" );
-    
-    histos1D_[ "etaElectron_pass" ] = fileService->make< TH1D >( "etaElectron_pass", "nb of electron passing", 30, -3., 3.);
-    histos1D_[ "etaElectron_pass" ]->SetXTitle( "electron #eta" );
+    tree->Branch("nGsf" , &nGsf);
+    tree->Branch("nPass" , &nPass);
+    tree->Branch("nMatch" , &nMatch);
 
-    histos1D_[ "ptElectron_match" ] = fileService->make< TH1D >( "ptElectron_match", "nb of electron matched", 25, ptBins);
-    histos1D_[ "ptElectron_match" ]->SetXTitle( "electron p_{T} (GeV)" );
-    
-    histos1D_[ "etaElectron_match" ] = fileService->make< TH1D >( "etaElectron_match", "nb of electron passing matched", 30, -3., 3.);
-    histos1D_[ "etaElectron_match" ]->SetXTitle( "electron #eta" );
+    tree->Branch("ptGsf" , &ptGsf);
+    tree->Branch("ptPass" , &ptPass);
+    tree->Branch("ptMatch" , &ptMatch);
+
+    tree->Branch("etaGsf" , &etaGsf);
+    tree->Branch("etaPass" , &etaPass);
+    tree->Branch("etaMatch" , &etaMatch);
 
 }
 
 // ------------ method called once each job just after ending the event loop  ------------
 void drawVar::endJob()
 {
+
+  file->cd();
+  tree->Write();
+  file->Close();
 
 }
 

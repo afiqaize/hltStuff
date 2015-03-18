@@ -7,7 +7,7 @@ process.MessageLogger.cerr.FwkReport.reportEvery = cms.untracked.int32(1000)
 
 # Load stuff needed by lazy tools later for the value map producer
 process.load("Configuration.StandardSequences.Services_cff")
-process.load("Configuration.StandardSequences.Geometry_cff")
+process.load("Configuration.Geometry.GeometryIdeal_cff")
 process.load("Configuration.StandardSequences.MagneticField_38T_cff")
 process.load("Configuration.StandardSequences.FrontierConditions_GlobalTag_cff")
 process.load("Configuration.StandardSequences.Reconstruction_cff")
@@ -15,7 +15,7 @@ process.load("Configuration.StandardSequences.Reconstruction_cff")
 # for PHYS14 scenario PU4bx50 : global tag is ???
 # for PHYS14 scenario PU20bx25: global tag is PHYS14_25_V1
 # as a rule, find the global tag in the DAS under the Configs for given dataset
-process.GlobalTag.globaltag = 'PHYS14_25_V1'
+process.GlobalTag.globaltag = 'PHYS14_25_V3' # 'MCRUN2_72_V3A'
 
 process.maxEvents = cms.untracked.PSet(
     input = cms.untracked.int32(-1)
@@ -68,6 +68,7 @@ process.eID = cms.EDFilter('ElectronIDFilter',
                              )
 
 process.drawHist = cms.EDAnalyzer('drawVar',
+                                   outFile = cms.string( 'out.root' ),
                                    pathName = cms.string("HLT_Ele32_eta2p1_WP75_Gsf_v1"),
                                    filterName = cms.string("hltEle32WP75GsfTrackIsoFilter"),
                                    procName = cms.string("idSkim"),
@@ -76,9 +77,6 @@ process.drawHist = cms.EDAnalyzer('drawVar',
                                    etaCut = cms.double(2.1),
                                    electrons = cms.InputTag("gedGsfElectrons"),
 )
-process.TFileService = cms.Service("TFileService",
-                                   fileName = cms.string( 'out.root' )
-                                  )
 
 process.p = cms.Path(process.egmGsfElectronIDSequence * process.eID + process.drawHist)
 
