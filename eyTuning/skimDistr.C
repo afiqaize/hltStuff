@@ -5,7 +5,7 @@
 #include "TMath.h"
 #include "TROOT.h"
 
-Bool_t barWPLoose(Float_t sie_cut_b, Float_t hoe_cut_b, Float_t eca_cut_b, Float_t hca_cut_b, 
+Bool_t barWPLoose(Float_t sie_cut_b, Float_t hoe_cut_b, Float_t ecc_cut_b, Float_t hcc_cut_b, 
                   Float_t eop_cut_b, Float_t chi_cut_b, Float_t mih_cut_b, 
                   Float_t det_cut_b, Float_t dph_cut_b, Float_t tki_cut_b) {
 
@@ -15,8 +15,8 @@ Bool_t barWPLoose(Float_t sie_cut_b, Float_t hoe_cut_b, Float_t eca_cut_b, Float
 
   if (sie_cut_b <= 0.011) {
     if (hoe_cut_b <= 0.06) {
-      if (eca_cut_b <= 0.15) {
-        if (hca_cut_b <= 0.15) {
+      if (ecc_cut_b <= 0.15) {
+        if (hcc_cut_b <= 0.15) {
           if (eop_cut_b <= 0.012) {
             if (dph_cut_b <= .02) {
               if (det_cut_b <= .004) {
@@ -39,7 +39,7 @@ Bool_t barWPLoose(Float_t sie_cut_b, Float_t hoe_cut_b, Float_t eca_cut_b, Float
 
 }
 
-Bool_t endWPLoose(Float_t sie_cut_e, Float_t hoe_cut_e, Float_t eca_cut_e, Float_t hca_cut_e, 
+Bool_t endWPLoose(Float_t sie_cut_e, Float_t hoe_cut_e, Float_t ecc_cut_e, Float_t hcc_cut_e, 
                   Float_t eop_cut_e, Float_t chi_cut_e, Float_t mih_cut_e,
                   Float_t det_cut_e, Float_t dph_cut_e, Float_t tki_cut_e) {
 
@@ -49,8 +49,8 @@ Bool_t endWPLoose(Float_t sie_cut_e, Float_t hoe_cut_e, Float_t eca_cut_e, Float
 
   if (sie_cut_e <= 0.032) {
     if (hoe_cut_e <= 0.065) {
-      if (eca_cut_e <= 0.15) {
-        if (hca_cut_e <= 0.16) {
+      if (ecc_cut_e <= 0.15) {
+        if (hcc_cut_e <= 0.16) {
           if (eop_cut_e <= 0.01) {
             if (dph_cut_e <= 999.) {
               if (det_cut_e <= 999.) {
@@ -73,22 +73,22 @@ Bool_t endWPLoose(Float_t sie_cut_e, Float_t hoe_cut_e, Float_t eca_cut_e, Float
 
 }
 
-Bool_t notFake(Float_t sie_cut_b, Float_t hoe_cut_b, Float_t eca_cut_b, Float_t hca_cut_b, 
-               Float_t eop_cut_b, Float_t chi_cut_b, Float_t mih_cut_b, 
-               Float_t det_cut_b, Float_t dph_cut_b, Float_t tki_cut_b) {
+Bool_t notFake(Float_t sie_cut, Float_t hoe_cut, Float_t ecc_cut, Float_t hcc_cut, 
+               Float_t eop_cut, Float_t chi_cut, Float_t mih_cut, 
+               Float_t det_cut, Float_t dph_cut, Float_t tki_cut) {
 
   Bool_t candOk = false;
 
-  if (sie_cut_b <= 999.0) {
-    if (hoe_cut_b <= 999.0) {
-      if (eca_cut_b <= 999.0) {
-        if (hca_cut_b <= 999.0) {
-          if (eop_cut_b <= 999.0) {
-            if (dph_cut_b <= 999.0) {
-              if (det_cut_b <= 999.0) {
-                if (tki_cut_b <= 999.0) {
-                  if (mih_cut_b <= 999.0) {
-                    if (chi_cut_b <= 999.0)
+  if (sie_cut <= 999.0) {
+    if (hoe_cut <= 999.0) {
+      if (ecc_cut <= 999.0) {
+        if (hcc_cut <= 999.0) {
+          if (eop_cut <= 999.0) {
+            if (dph_cut <= 999.0) {
+              if (det_cut <= 999.0) {
+                if (tki_cut <= 999.0) {
+                  if (mih_cut <= 999.0) {
+                    if (chi_cut <= 999.0)
                       candOk = true;
 
                   }
@@ -108,13 +108,13 @@ Bool_t notFake(Float_t sie_cut_b, Float_t hoe_cut_b, Float_t eca_cut_b, Float_t 
 void skimDistr() {
 
   const string inDir = "/home/ieeya/Downloads/HLT_Val/dev/e_74x/file/v15p1/";
-  const string outputFile = "skim_dat.root";
+  const string outputFile = "skim_m1mcStd_m2mcHFFlat_mcRun2v9.root";
 
   Bool_t hasReco = false;
 
   TFile* out_file = new TFile((inDir + outputFile).c_str(), "recreate");
   TTree* out_tree = new TTree("eleDistr", "eleDistr");
-  out_tree->SetAutoSave(25000000);
+  out_tree->SetAutoSave(35000000);
 
   Int_t cand, npf, hlt_n, reco_n, nvtx, gpn, itype, pass[10], mishitspf[10], reco_mishits[10];
   Float_t rho, puWgt, weight, epf[10], eRawpf[10], etpf[10], etRawpf[10], etapf[10], phipf[10], sieiepf[10];
@@ -188,15 +188,15 @@ void skimDistr() {
   }
   
   // MC vs data: weight = xsec_mc * intLumi_dat / nEvt_mc
-  const int proc = 1;
-  const int type[proc] = {1};
-  const float weights[proc] = {1.};
-  const char* names[proc] = {"ntup_dat_00.root"};
+  //const int proc = 1;
+  //const int type[proc] = {1};
+  //const float weights[proc] = {1.};
+  //const char* names[proc] = {"ntup_dat_05.root"};
 
-  //const Int_t proc = 2;
-  //const Int_t type[proc] = {-1, -2};
-  //const Float_t weights[proc] = {1., 1.};
-  //const char* names[proc] = {"ntup_mcStd.root", "ntup_mcHFFlat.root"};
+  const Int_t proc = 2;
+  const Int_t type[proc] = {-1, -2};
+  const Float_t weights[proc] = {41.7966, 2.5077};
+  const char* names[proc] = {"ntup_wmcStd_mcRun2v9.root", "ntup_wmcHFFlat_mcRun2v9.root"};
 
   //const int proc = 1;
   //const int type[proc] = {1};
@@ -212,7 +212,7 @@ void skimDistr() {
     inputTree->SetBranchStatus("npf"        , 1);
     inputTree->SetBranchStatus("nvtx"       , 1);
     inputTree->SetBranchStatus("rho"        , 1);
-    //inputTree->SetBranchStatus("puWgt"      , 1);
+    inputTree->SetBranchStatus("puWgt"      , 1);
     inputTree->SetBranchStatus("epf"        , 1);
     inputTree->SetBranchStatus("eRawpf"     , 1);
     inputTree->SetBranchStatus("etpf"       , 1);
@@ -234,7 +234,7 @@ void skimDistr() {
     inputTree->SetBranchAddress("npf"        , &npf);
     inputTree->SetBranchAddress("nvtx"       , &nvtx);
     inputTree->SetBranchAddress("rho"        , &rho);
-    //inputTree->SetBranchAddress("puWgt"      , &puWgt);
+    inputTree->SetBranchAddress("puWgt"      , &puWgt);
     inputTree->SetBranchAddress("epf"        , epf);
     inputTree->SetBranchAddress("eRawpf"     , eRawpf);
     inputTree->SetBranchAddress("etpf"       , etpf);
@@ -304,7 +304,7 @@ void skimDistr() {
    
       itype = type[nfiles];
       weight = weights[nfiles];
-      puWgt = 1.;
+      //puWgt = 1.;
       cand = 0;
 
       for (Int_t i = 0; i < npf; i++) {

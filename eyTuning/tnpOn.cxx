@@ -1,5 +1,6 @@
 // Stolen from mvaPlot in 740
 // For the tnp hlt vs reco electron plotting
+// Nov 25 updated and streamlined
 
 #include "iostream"
 #include <iomanip>
@@ -17,6 +18,7 @@
 #include <TChain.h>
 #include <TTree.h>
 #include <TROOT.h>
+#include <TGaxis.h>
 #include <TLatex.h>
 #include <TBufferFile.h>
 #include <TLorentzVector.h>
@@ -27,7 +29,7 @@ using namespace std;
 // Subprogram for the tuning
 // One for each region
 
-Bool_t barPass(Float_t sie_cut_b, Float_t hoe_cut_b, Float_t eca_cut_b, Float_t hca_cut_b, 
+Bool_t barPass(Float_t sie_cut_b, Float_t hoe_cut_b, Float_t ecc_cut_b, Float_t hcc_cut_b, 
                Float_t eop_cut_b, Float_t chi_cut_b, Float_t mih_cut_b, 
                Float_t det_cut_b, Float_t dph_cut_b, Float_t tki_cut_b) {
 
@@ -35,16 +37,16 @@ Bool_t barPass(Float_t sie_cut_b, Float_t hoe_cut_b, Float_t eca_cut_b, Float_t 
 
   // All barrel cuts
 
-  if (sie_cut_b <= 1.0) {
-    if (hoe_cut_b <= 1.0) {
-      if (eca_cut_b <= 1.0) {
-        if (hca_cut_b <= 1.0) {
-          if (eop_cut_b <= 1.0) {
-            if (dph_cut_b <= 999.0) {
-              if (det_cut_b <= 999.0) {
-                if (tki_cut_b <= 1.0) {
-                  if (mih_cut_b <= 999.0) { // careful at these not 1.0 cuts
-                    if (chi_cut_b <= 999.0)
+  if (sie_cut_b <= 0.011) {
+    if (hoe_cut_b <= 0.06) {
+      if (ecc_cut_b <= 0.15) {
+        if (hcc_cut_b <= 0.15) {
+          if (eop_cut_b <= 0.012) {
+            if (dph_cut_b <= 0.02) {
+              if (det_cut_b <= 0.004) {
+                if (tki_cut_b <= 0.08) {
+                  if (mih_cut_b <= 5.5) { // careful at these not 1.0 cuts
+                    if (chi_cut_b <= 15.0)
                       barOk = true;
 
                   }
@@ -61,7 +63,7 @@ Bool_t barPass(Float_t sie_cut_b, Float_t hoe_cut_b, Float_t eca_cut_b, Float_t 
 
 }
 
-Bool_t endPass(Float_t sie_cut_e, Float_t hoe_cut_e, Float_t eca_cut_e, Float_t hca_cut_e, 
+Bool_t endPass(Float_t sie_cut_e, Float_t hoe_cut_e, Float_t ecc_cut_e, Float_t hcc_cut_e, 
                Float_t eop_cut_e, Float_t chi_cut_e, Float_t mih_cut_e,
                Float_t det_cut_e, Float_t dph_cut_e, Float_t tki_cut_e) {
 
@@ -69,16 +71,16 @@ Bool_t endPass(Float_t sie_cut_e, Float_t hoe_cut_e, Float_t eca_cut_e, Float_t 
 
   // All endcap cuts
 
-  if (sie_cut_e <= 1.0) {
-    if (hoe_cut_e <= 1.0) {
-      if (eca_cut_e <= 1.0) {
-        if (hca_cut_e <= 1.0) {
-          if (eop_cut_e <= 1.0) {
-            if (dph_cut_e <= 999.0) {
-              if (det_cut_e <= 999.0) {
-                if (tki_cut_e <= 1.0) {
-                  if (mih_cut_e <= 999.0) { // careful at these not 1.0 cuts
-                    if (chi_cut_e <= 999.0)
+  if (sie_cut_e <= 0.032) {
+    if (hoe_cut_e <= 0.065) {
+      if (ecc_cut_e <= 0.15) {
+        if (hcc_cut_e <= 0.16) {
+          if (eop_cut_e <= 0.01) {
+            if (dph_cut_e <= 1.0) {
+              if (det_cut_e <= 1.0) {
+                if (tki_cut_e <= 0.08) {
+                  if (mih_cut_e <= 2.5) { // careful at these not 1.0 cuts
+                    if (chi_cut_e <= 2.8)
                       endOk = true;
 
                   }
@@ -134,11 +136,11 @@ void tnpOn() {
    setTDRStyle();
 
    // Everything to tinker with should be here
-   Double_t yMin_b = .001, yMax_b = 999999.;
-   Double_t yMin_e = .001, yMax_e = 99999.;
+   Double_t yMin_b = .001, yMax_b = 199999.;
+   Double_t yMin_e = .001, yMax_e = 79999.;
 
    string varName[5];
-   varName[0] = "mee";
+   varName[0] = "ecc";
 
    Bool_t drawLog = true;
    Double_t cut_b = -1., cut_e = -1.;
@@ -214,10 +216,17 @@ void tnpOn() {
    varName[3] = "Evt / bin";
    varName[4] = pntLeg + " / " + hisLeg;
 
-   if (varName[0] == "mee" or varName[0] == "mer") {
+   if (varName[0] == "mee") {
 
      varName[1] = "Tag and Probe Mass";
      varName[2] = "m_{ee} (GeV)";
+
+   }
+
+   if (varName[0] == "mer") {
+
+     varName[1] = "Tag and Probe Mass";
+     varName[2] = "Raw m_{ee} (GeV)";
 
    }
 
@@ -315,6 +324,7 @@ void tnpOn() {
    // -------------------------------------------------- //
 
    TH1::SetDefaultSumw2(true);
+   //TGaxis::SetMaxDigits(3);
 
    TH1D* mee_1b = new TH1D("mee_1b", (varName[1] + " Distribution").c_str(), meeb_nBin, meeb_min, meeb_max);
    TH1D* mee_1e = new TH1D("mee_1e", (varName[1] + " Distribution").c_str(), meee_nBin, meee_min, meee_max);
@@ -472,85 +482,86 @@ void tnpOn() {
 
    TH1D* mee_3b = new TH1D("mee_3b", (varName[1] + " Distribution").c_str(), meeb_nBin, meeb_min, meeb_max);
    TH1D* mee_3e = new TH1D("mee_3e", (varName[1] + " Distribution").c_str(), meee_nBin, meee_min, meee_max);
-   styleHist(mee_3b, kYellow + 1, 0, 23, 1, 1.5);
-   styleHist(mee_3e, kYellow + 1, 0, 23, 1, 1.5);
+   styleHist(mee_3b, kYellow + 1, 0, 23, 1, 2.0);
+   styleHist(mee_3e, kYellow + 1, 0, 23, 1, 2.0);
 
    TH1D* phi_3b = new TH1D("phi_3b", (varName[1] + " Distribution").c_str(), phib_nBin, phib_min, phib_max);
    TH1D* phi_3e = new TH1D("phi_3e", (varName[1] + " Distribution").c_str(), phie_nBin, phie_min, phie_max);
-   styleHist(phi_3b, kYellow + 1, 0, 23, 1, 1.5);
-   styleHist(phi_3e, kYellow + 1, 0, 23, 1, 1.5);
+   styleHist(phi_3b, kYellow + 1, 0, 23, 1, 2.0);
+   styleHist(phi_3e, kYellow + 1, 0, 23, 1, 2.0);
 
    TH1D* eet_3b = new TH1D("eet_3b", (varName[1] + " Distribution").c_str(), eetb_nBin, eetb_min, eetb_max);
    TH1D* eet_3e = new TH1D("eet_3e", (varName[1] + " Distribution").c_str(), eete_nBin, eete_min, eete_max);
-   styleHist(eet_3b, kYellow + 1, 0, 23, 1, 1.5);
-   styleHist(eet_3e, kYellow + 1, 0, 23, 1, 1.5);
+   styleHist(eet_3b, kYellow + 1, 0, 23, 1, 2.0);
+   styleHist(eet_3e, kYellow + 1, 0, 23, 1, 2.0);
 
    TH1D* sie_3b = new TH1D("sie_3b", (varName[1] + " Distribution").c_str(), sieb_nBin, sieb_min, sieb_max);
    TH1D* sie_3e = new TH1D("sie_3e", (varName[1] + " Distribution").c_str(), siee_nBin, siee_min, siee_max);
-   styleHist(sie_3b, kYellow + 1, 0, 23, 1, 1.5);
-   styleHist(sie_3e, kYellow + 1, 0, 23, 1, 1.5);
+   styleHist(sie_3b, kYellow + 1, 0, 23, 1, 2.0);
+   styleHist(sie_3e, kYellow + 1, 0, 23, 1, 2.0);
 
    TH1D* hoe_3b = new TH1D("hoe_3b", (varName[1] + " Distribution").c_str(), hoeb_nBin, hoeb_min, hoeb_max);
    TH1D* hoe_3e = new TH1D("hoe_3e", (varName[1] + " Distribution").c_str(), hoee_nBin, hoee_min, hoee_max);
-   styleHist(hoe_3b, kYellow + 1, 0, 23, 1, 1.5);
-   styleHist(hoe_3e, kYellow + 1, 0, 23, 1, 1.5);
+   styleHist(hoe_3b, kYellow + 1, 0, 23, 1, 2.0);
+   styleHist(hoe_3e, kYellow + 1, 0, 23, 1, 2.0);
 
    TH1D* eca_3b = new TH1D("eca_3b", (varName[1] + " Distribution").c_str(), ecab_nBin, ecab_min, ecab_max);
    TH1D* eca_3e = new TH1D("eca_3e", (varName[1] + " Distribution").c_str(), ecae_nBin, ecae_min, ecae_max);
-   styleHist(eca_3b, kYellow + 1, 0, 23, 1, 1.5);
-   styleHist(eca_3e, kYellow + 1, 0, 23, 1, 1.5);
+   styleHist(eca_3b, kYellow + 1, 0, 23, 1, 2.0);
+   styleHist(eca_3e, kYellow + 1, 0, 23, 1, 2.0);
 
    TH1D* ecc_3b = new TH1D("ecc_3b", (varName[1] + " Distribution").c_str(), eccb_nBin, eccb_min, eccb_max);
    TH1D* ecc_3e = new TH1D("ecc_3e", (varName[1] + " Distribution").c_str(), ecce_nBin, ecce_min, ecce_max);
-   styleHist(ecc_3b, kYellow + 1, 0, 23, 1, 1.5);
-   styleHist(ecc_3e, kYellow + 1, 0, 23, 1, 1.5);
+   styleHist(ecc_3b, kYellow + 1, 0, 23, 1, 2.0);
+   styleHist(ecc_3e, kYellow + 1, 0, 23, 1, 2.0);
 
    TH1D* hca_3b = new TH1D("hca_3b", (varName[1] + " Distribution").c_str(), hcab_nBin, hcab_min, hcab_max);
    TH1D* hca_3e = new TH1D("hca_3e", (varName[1] + " Distribution").c_str(), hcae_nBin, hcae_min, hcae_max);
-   styleHist(hca_3b, kYellow + 1, 0, 23, 1, 1.5);
-   styleHist(hca_3e, kYellow + 1, 0, 23, 1, 1.5);
+   styleHist(hca_3b, kYellow + 1, 0, 23, 1, 2.0);
+   styleHist(hca_3e, kYellow + 1, 0, 23, 1, 2.0);
 
    TH1D* hcc_3b = new TH1D("hcc_3b", (varName[1] + " Distribution").c_str(), hccb_nBin, hccb_min, hccb_max);
    TH1D* hcc_3e = new TH1D("hcc_3e", (varName[1] + " Distribution").c_str(), hcce_nBin, hcce_min, hcce_max);
-   styleHist(hcc_3b, kYellow + 1, 0, 23, 1, 1.5);
-   styleHist(hcc_3e, kYellow + 1, 0, 23, 1, 1.5);
+   styleHist(hcc_3b, kYellow + 1, 0, 23, 1, 2.0);
+   styleHist(hcc_3e, kYellow + 1, 0, 23, 1, 2.0);
 
    TH1D* eop_3b = new TH1D("eop_3b", (varName[1] + " Distribution").c_str(), eopb_nBin, eopb_min, eopb_max);
    TH1D* eop_3e = new TH1D("eop_3e", (varName[1] + " Distribution").c_str(), eope_nBin, eope_min, eope_max);
-   styleHist(eop_3b, kYellow + 1, 0, 23, 1, 1.5);
-   styleHist(eop_3e, kYellow + 1, 0, 23, 1, 1.5);
+   styleHist(eop_3b, kYellow + 1, 0, 23, 1, 2.0);
+   styleHist(eop_3e, kYellow + 1, 0, 23, 1, 2.0);
 
    TH1D* chi_3b = new TH1D("chi_3b", (varName[1] + " Distribution").c_str(), chib_nBin, chib_min, chib_max);
    TH1D* chi_3e = new TH1D("chi_3e", (varName[1] + " Distribution").c_str(), chie_nBin, chie_min, chie_max);
-   styleHist(chi_3b, kYellow + 1, 0, 23, 1, 1.5);
-   styleHist(chi_3e, kYellow + 1, 0, 23, 1, 1.5);
+   styleHist(chi_3b, kYellow + 1, 0, 23, 1, 2.0);
+   styleHist(chi_3e, kYellow + 1, 0, 23, 1, 2.0);
 
    TH1D* mih_3b = new TH1D("mih_3b", (varName[1] + " Distribution").c_str(), mihb_nBin, mihb_min, mihb_max);
    TH1D* mih_3e = new TH1D("mih_3e", (varName[1] + " Distribution").c_str(), mihe_nBin, mihe_min, mihe_max);
-   styleHist(mih_3b, kYellow + 1, 0, 23, 1, 1.5);
-   styleHist(mih_3e, kYellow + 1, 0, 23, 1, 1.5);
+   styleHist(mih_3b, kYellow + 1, 0, 23, 1, 2.0);
+   styleHist(mih_3e, kYellow + 1, 0, 23, 1, 2.0);
 
    TH1D* det_3b = new TH1D("det_3b", (varName[1] + " Distribution").c_str(), detb_nBin, detb_min, detb_max);
    TH1D* det_3e = new TH1D("det_3e", (varName[1] + " Distribution").c_str(), dete_nBin, dete_min, dete_max);
-   styleHist(det_3b, kYellow + 1, 0, 23, 1, 1.5);
-   styleHist(det_3e, kYellow + 1, 0, 23, 1, 1.5);
+   styleHist(det_3b, kYellow + 1, 0, 23, 1, 2.0);
+   styleHist(det_3e, kYellow + 1, 0, 23, 1, 2.0);
 
    TH1D* dph_3b = new TH1D("dph_3b", (varName[1] + " Distribution").c_str(), dphb_nBin, dphb_min, dphb_max);
    TH1D* dph_3e = new TH1D("dph_3e", (varName[1] + " Distribution").c_str(), dphe_nBin, dphe_min, dphe_max);
-   styleHist(dph_3b, kYellow + 1, 0, 23, 1, 1.5);
-   styleHist(dph_3e, kYellow + 1, 0, 23, 1, 1.5);
+   styleHist(dph_3b, kYellow + 1, 0, 23, 1, 2.0);
+   styleHist(dph_3e, kYellow + 1, 0, 23, 1, 2.0);
 
    TH1D* tki_3b = new TH1D("tki_3b", (varName[1] + " Distribution").c_str(), tkib_nBin, tkib_min, tkib_max);
    TH1D* tki_3e = new TH1D("tki_3e", (varName[1] + " Distribution").c_str(), tkie_nBin, tkie_min, tkie_max);
-   styleHist(tki_3b, kYellow + 1, 0, 23, 1, 1.5);
-   styleHist(tki_3e, kYellow + 1, 0, 23, 1, 1.5);
+   styleHist(tki_3b, kYellow + 1, 0, 23, 1, 2.0);
+   styleHist(tki_3e, kYellow + 1, 0, 23, 1, 2.0);
 
    // -------------------------------------------------- //
 
    string const inDir = "/home/ieeya/Downloads/HLT_Val/dev/e_74x/file/v15p1/";
 
    TChain *t1 = new TChain("eleDistr");
-   t1->Add((inDir + "make_*.root").c_str());
+   t1->Add((inDir + "skim_p1dat_*.root").c_str());
+   t1->Add((inDir + "skim_m1mcStd_m2mcHFFlat_mcRun2v9.root").c_str());
 
    //TFile *f1 = new TFile((inDir + "xxx.root").c_str());
    //TTree *t1 = (TTree *) f1->Get("eleDistr");
@@ -621,7 +632,7 @@ void tnpOn() {
      for (Int_t iTag = 0; iTag < n; iTag++) {
 
        if (pass[iTag] != 1) continue;
-       if (et[iTag] < 25.) continue;
+       if ((et[iTag] < 25.) or (eta[iTag] > 2.5)) continue;
 
        p4Tag.SetPtEtaPhiE(et[iTag], eta[iTag], phi[iTag], e[iTag]);
 
@@ -633,6 +644,9 @@ void tnpOn() {
          p4Probe.SetPtEtaPhiE(et[iProbe], eta[iProbe], phi[iProbe], e[iProbe]);
 
          if ((p4Tag + p4Probe).M() < 70. or (p4Tag + p4Probe).M() > 110.) continue;
+
+         //p4Tag.SetPtEtaPhiE(etr[iTag], eta[iTag], phi[iTag], er[iTag]);
+         //p4Probe.SetPtEtaPhiE(etr[iProbe], eta[iProbe], phi[iProbe], er[iProbe]);
 
          if (type == 1) {
 
@@ -794,8 +808,8 @@ void tnpOn() {
 
    //mee_2b->Scale(mee_1b->Integral() / mee_2b->Integral()); mee_2e->Scale(mee_1e->Integral() / mee_2e->Integral());
 
-   static const Int_t nStep_b = meeb_nBin + 1, nStep_e = meee_nBin + 1;
-   Double_t sStep_b = (meeb_max - meeb_min) / meeb_nBin, sStep_e = (meee_max - meee_min) / meee_nBin;
+   static const Int_t nStep_b = eccb_nBin + 1, nStep_e = ecce_nBin + 1;
+   Double_t sStep_b = (eccb_max - eccb_min) / eccb_nBin, sStep_e = (ecce_max - ecce_min) / ecce_nBin;
 
    Float_t l1b[nStep_b], eff_xb[nStep_b];
    Float_t l1e[nStep_e], eff_xe[nStep_e];
@@ -804,7 +818,7 @@ void tnpOn() {
    for (Int_t bb = 0; bb < nStep_b; bb++) {
 
      l1b[bb] = 1.;
-     eff_xb[bb] = (bb * sStep_b) + meeb_min;
+     eff_xb[bb] = (bb * sStep_b) + eccb_min;
 
      std_xb[bb] = cut_b;
      if (bb == 0) std_yb[bb] = yMax_b;
@@ -816,7 +830,7 @@ void tnpOn() {
    for (Int_t ee = 0; ee < nStep_e; ee++) {
 
      l1e[ee] = 1.;
-     eff_xe[ee] = (ee * sStep_e) + meee_min;
+     eff_xe[ee] = (ee * sStep_e) + ecce_min;
 
      std_xe[ee] = cut_e;
      if (ee == 0) std_ye[ee] = yMax_e;
@@ -825,51 +839,23 @@ void tnpOn() {
 
    }
 
-   TGraph *lineb = new TGraph(meeb_nBin + 1, eff_xb, l1b);
+   TGraph *lineb = new TGraph(eccb_nBin + 1, eff_xb, l1b);
    lineb->SetLineColor(kYellow + 1);
    lineb->SetLineWidth(2);
 
-   TGraph *linee = new TGraph(meee_nBin + 1, eff_xe, l1e);
+   TGraph *linee = new TGraph(ecce_nBin + 1, eff_xe, l1e);
    linee->SetLineColor(kYellow + 1);
    linee->SetLineWidth(2);
 
-   TH1D *sfb = new TH1D("", "", meeb_nBin, meeb_min, meeb_max);
-   sfb->Divide(mee_1b, mee_2b, 1., 1., "B");
-   sfb->SetMarkerStyle(2);
-   sfb->SetMarkerSize(1);
-   sfb->SetMarkerColor(kBlack);
-   sfb->SetLineColor(kBlack);
-   sfb->SetLineWidth(1);
-   sfb->SetAxisRange(0.001, 1.999, "y");
-   sfb->SetTitle("");
+   TH1D *sfb = new TH1D("", "", eccb_nBin, eccb_min, eccb_max);
+   sfb->Divide(ecc_1b, ecc_2b, 1., 1., "B");
+   styleHist(sfb, kBlack, 0, 2, 1, 1.0);
+   axHist(sfb, 0.001, 1.999, varName[4], 0.061, 0.49, 0.059, varName[2], 0.061, 1.15, 0.059);
 
-   sfb->GetYaxis()->SetTitle(varName[4].c_str());
-   sfb->GetYaxis()->SetTitleSize(0.061);
-   sfb->GetYaxis()->SetTitleOffset(0.49);
-   sfb->GetYaxis()->SetLabelSize(0.059);
-   sfb->SetXTitle(varName[2].c_str());
-   sfb->GetXaxis()->SetTitleSize(0.061);
-   sfb->GetXaxis()->SetTitleOffset(1.15);
-   sfb->GetXaxis()->SetLabelSize(0.059);
-
-   TH1D *sfe = new TH1D("", "", meee_nBin, meee_min, meee_max);
-   sfe->Divide(mee_1e, mee_2e, 1., 1., "B");
-   sfe->SetMarkerStyle(2);
-   sfe->SetMarkerSize(1);
-   sfe->SetMarkerColor(kBlack);
-   sfe->SetLineColor(kBlack);
-   sfe->SetLineWidth(1);
-   sfe->SetAxisRange(0.001, 1.999, "y");
-   sfe->SetTitle("");
-
-   sfe->GetYaxis()->SetTitle(varName[4].c_str());
-   sfe->GetYaxis()->SetTitleSize(0.061);
-   sfe->GetYaxis()->SetTitleOffset(0.49);
-   sfe->GetYaxis()->SetLabelSize(0.059);
-   sfe->SetXTitle(varName[2].c_str());
-   sfe->GetXaxis()->SetTitleSize(0.061);
-   sfe->GetXaxis()->SetTitleOffset(1.15);
-   sfe->GetXaxis()->SetLabelSize(0.059);
+   TH1D *sfe = new TH1D("", "", ecce_nBin, ecce_min, ecce_max);
+   sfe->Divide(ecc_1e, ecc_2e, 1., 1., "B");
+   styleHist(sfe, kBlack, 0, 2, 1, 1.0);
+   axHist(sfe, 0.001, 1.999, varName[4], 0.061, 0.49, 0.059, varName[2], 0.061, 1.15, 0.059);
 
    TGraph* stdb = new TGraph(nStep_b, std_xb, std_yb);
    stdb->SetLineColor(kBlack);
@@ -892,15 +878,15 @@ void tnpOn() {
 
    }
 
-   axHist(mee_2b, yMin_b, yMax_b, varName[3], 0.027, 1.05, 0.025, varName[2], 0.027, 1.15, 0.025);
-   axHist(mee_2e, yMin_e, yMax_e, varName[3], 0.027, 1.05, 0.025, varName[2], 0.027, 1.15, 0.025);
+   axHist(ecc_2b, yMin_b, yMax_b, varName[3], 0.027, 1.05, 0.025, varName[2], 0.027, 1.15, 0.025);
+   axHist(ecc_2e, yMin_e, yMax_e, varName[3], 0.027, 1.05, 0.025, varName[2], 0.027, 1.15, 0.025);
 
    TLegend *leg01 = new TLegend(.71, .67, .89, .85);
    //leg01->SetHeader("EB Tag and EB Probe");
    leg01->SetHeader("#left|#eta^{e}#right| < 1.479");
-   leg01->AddEntry(mee_2b, (hisLeg).c_str(), "f");
-   leg01->AddEntry(mee_1b, (pntLeg).c_str(), "p");
-   leg01->AddEntry(mee_3b, (pntLeg2).c_str(), "l");
+   leg01->AddEntry(ecc_2b, (hisLeg).c_str(), "f");
+   leg01->AddEntry(ecc_1b, (pntLeg).c_str(), "p");
+   leg01->AddEntry(ecc_3b, (pntLeg2).c_str(), "l");
    leg01->SetFillColor(0);
    leg01->SetBorderSize(0);
    leg01->SetTextSize(0.03);
@@ -909,9 +895,9 @@ void tnpOn() {
    TLegend *leg02 = new TLegend(.71, .67, .89, .85);
    //leg02->SetHeader("!(EB Tag and EB Probe)");
    leg02->SetHeader("#left|#eta^{e}#right| > 1.479");
-   leg02->AddEntry(mee_2e, (hisLeg).c_str(), "f");
-   leg02->AddEntry(mee_1e, (pntLeg).c_str(), "p");
-   leg02->AddEntry(mee_3e, (pntLeg2).c_str(), "l");
+   leg02->AddEntry(ecc_2e, (hisLeg).c_str(), "f");
+   leg02->AddEntry(ecc_1e, (pntLeg).c_str(), "p");
+   leg02->AddEntry(ecc_3e, (pntLeg2).c_str(), "l");
    leg02->SetFillColor(0);
    leg02->SetBorderSize(0);
    leg02->SetTextSize(0.03);
@@ -919,7 +905,7 @@ void tnpOn() {
 
    // -------------------------------------------------- //
 
-   string const outDir = inDir;
+   string const outDir = inDir + "plot_mcRun2v9/";
 
    TCanvas *c01 = new TCanvas("c01", "c01", 200, 10, 1000, 1000);
    TCanvas *c02 = new TCanvas("c02", "c02", 200, 10, 1000, 1000);
@@ -932,13 +918,13 @@ void tnpOn() {
    pad1->cd();
 
    if (drawLog) pad1->SetLogy();
-   mee_2b->Draw("hist");
-   mee_1b->Draw("pesame");
-   mee_3b->Draw("histsame");
+   ecc_2b->Draw("hist");
+   ecc_1b->Draw("pesame");
+   ecc_3b->Draw("histsame");
    stdb->Draw("same");
 
    leg01->Draw();
-   txt.DrawLatexNDC(0.06, 0.928, "#bf{CMS} #it{Preliminary}");
+   //txt.DrawLatexNDC(0.06, 0.928, "#bf{CMS} #it{Preliminary}");
    txt.DrawLatexNDC(0.783, 0.933, "2.081 fb^{-1} (13 TeV)");
 
    c01->cd();
@@ -953,7 +939,7 @@ void tnpOn() {
    sfb->Draw("same");
 
    c01->cd();
-   c01->SaveAs((outDir + "mkt_" + varName[0] + "_bar.pdf").c_str());
+   c01->SaveAs((outDir + "hlt_" + varName[0] + "_bar.pdf").c_str());
 
    c02->cd();
 
@@ -963,13 +949,13 @@ void tnpOn() {
    pad3->cd();
 
    if (drawLog) pad3->SetLogy();
-   mee_2e->Draw("hist");
-   mee_1e->Draw("pesame");
-   mee_3e->Draw("histsame");
+   ecc_2e->Draw("hist");
+   ecc_1e->Draw("pesame");
+   ecc_3e->Draw("histsame");
    stde->Draw("same");
 
    leg02->Draw();
-   txt.DrawLatexNDC(0.06, 0.928, "#bf{CMS} #it{Preliminary}");
+   //txt.DrawLatexNDC(0.06, 0.928, "#bf{CMS} #it{Preliminary}");
    txt.DrawLatexNDC(0.783, 0.933, "2.081 fb^{-1} (13 TeV)");
 
    c02->cd();
@@ -984,7 +970,7 @@ void tnpOn() {
    sfe->Draw("same");
 
    c02->cd();
-   c02->SaveAs((outDir + "mkt_" + varName[0] + "_end.pdf").c_str());
+   c02->SaveAs((outDir + "hlt_" + varName[0] + "_end.pdf").c_str());
 
    // -------------------------------------------------- //
 
