@@ -9,9 +9,10 @@
 //
 //
 
-// THIS IS THE ADAPTED, STREAMLINED VERSION FOR HLT VS RECO TASK
-// Updated to use DetaSeed: Matteo's mail Aug 07 2015
-// Updated to use getByToken for 80X: Dec 15
+// Jul 23 2015: inclusion of RECO quantities (on RECO/AOD linked with RAW)
+// Aug 07 2015: dEtaSeed and other parameters
+// Dec 15 2015: updated to use getByToken for 80X
+// Jan 14 2016: now event metadata is stored too
 
 #include <memory>
 
@@ -131,7 +132,7 @@ private:
   TTree* t;
   
   Float_t rho;
-  Int_t passSel;
+  Int_t nRun, nEvt, nLumi, accPath;
   Int_t n, npf, gp_n, reco_n;
   Float_t epf[10];
   Float_t eRawpf[10];
@@ -181,7 +182,7 @@ private:
   Float_t reco_chi2[10];
   Float_t reco_tkiso[10];
 
-  Int_t nvtx;
+  Int_t nVtx;
 
   bool isData;
   bool saveReco;
@@ -266,36 +267,41 @@ void plotDistr::mcTruth(edm::Handle<reco::GenParticleCollection> gpH) {
   }
 }
 
-void plotDistr::analyze(const edm::Event& event, const edm::EventSetup& iSetup) {
+void plotDistr::analyze(const edm::Event& iEvt, const edm::EventSetup& iSetup) {
+
+  nRun = iEvt.eventAuxiliary().run();
+  nEvt = iEvt.eventAuxiliary().event();
+  nLumi = iEvt.eventAuxiliary().luminosityBlock();
+
   edm::Handle<edm::TriggerResults> trigResultsHandle;
-  event.getByToken(trgResToken,trigResultsHandle);
+  iEvt.getByToken(trgResToken,trigResultsHandle);
 
   const edm::TriggerResults& trigResults = *trigResultsHandle;
-  const edm::TriggerNames& trigNames = event.triggerNames(trigResults);  
+  const edm::TriggerNames& trigNames = iEvt.triggerNames(trigResults);  
 
-  passSel = 0; 
+  accPath = 0; 
   for(size_t pathNr=0;pathNr<pathNames_.size();pathNr++){
     size_t pathIndex = trigNames.triggerIndex(pathNames_[pathNr]);
     if(pathIndex<trigResults.size() &&  trigResults.accept(pathIndex)) 
-      passSel = 1;
+      accPath = 1;
   }
 
   edm::Handle<reco::GenParticleCollection> gpH;
   if (!isData) {
-    event.getByToken(genToken, gpH);
+    iEvt.getByToken(genToken, gpH);
     mcTruth(gpH);
   }
 
   if (saveReco) {
 
     edm::Handle<std::vector<reco::GsfElectron> > elH;
-    event.getByToken(elToken, elH);
+    iEvt.getByToken(elToken, elH);
 
     edm::Handle<edm::ValueMap<float> > recoEcalMap;
-    event.getByToken(recoEcalToken, recoEcalMap);
+    iEvt.getByToken(recoEcalToken, recoEcalMap);
 
     edm::Handle<edm::ValueMap<float> > recoHcalMap;
-    event.getByToken(recoHcalToken, recoHcalMap);
+    iEvt.getByToken(recoHcalToken, recoHcalMap);
 
     reco_n = 0;
     for (unsigned int i=0; i<elH->size(); i++) {
@@ -380,15 +386,15 @@ void plotDistr::analyze(const edm::Event& event, const edm::EventSetup& iSetup) 
   edm::Handle<reco::RecoEcalCandidateIsolationMap> hitsMapH;
 
   edm::Handle<reco::VertexCollection> vtxH;
-  event.getByToken(vtxToken, vtxH);
+  iEvt.getByToken(vtxToken, vtxH);
 
   if (!vtxH.failedToGet())
-    nvtx = vtxH->size();
+    nVtx = vtxH->size();
   else
-    nvtx = 0;
+    nVtx = 0;
 
   edm::Handle<double> rhoH;
-  event.getByToken(rhoToken, rhoH);
+  iEvt.getByToken(rhoToken, rhoH);
 
   if (!rhoH.failedToGet())
     rho = *(rhoH.product());
@@ -396,68 +402,68 @@ void plotDistr::analyze(const edm::Event& event, const edm::EventSetup& iSetup) 
     rho = 9999.;
 
   if (newClustering) {
-    event.getByToken(cToken, cH);
+    iEvt.getByToken(cToken, cH);
     
     npf = 0;
     if (!cH.failedToGet()) {
     
       const reco::RecoEcalCandidateIsolationMap* sieieMapPF = 0;
-      event.getByToken(sieieToken, sieieMapH);
+      iEvt.getByToken(sieieToken, sieieMapH);
       if (!sieieMapH.failedToGet())  
 	sieieMapPF = sieieMapH.product();
       
       const reco::RecoEcalCandidateIsolationMap* ecalMapPF = 0;
-      event.getByToken(ecalToken, ecalMapH);
+      iEvt.getByToken(ecalToken, ecalMapH);
       if (!ecalMapH.failedToGet()) 
 	ecalMapPF = ecalMapH.product(); 
       
       const reco::RecoEcalCandidateIsolationMap* hcalMapPF  = 0;
-      event.getByToken(hcalToken, hcalMapH);
+      iEvt.getByToken(hcalToken, hcalMapH);
       if (!hcalMapH.failedToGet()) 
 	hcalMapPF = hcalMapH.product(); 
       
       const reco::RecoEcalCandidateIsolationMap* hoeMapPF = 0;
-      event.getByToken(hoeToken, hoeMapH);
+      iEvt.getByToken(hoeToken, hoeMapH);
       if (!hoeMapH.failedToGet()) 
 	hoeMapPF = hoeMapH.product(); 
       
       const reco::RecoEcalCandidateIsolationMap* tkisoMapPF = 0;
-      event.getByToken(tkisoToken, tkisoMapH);
+      iEvt.getByToken(tkisoToken, tkisoMapH);
       if (!tkisoMapH.failedToGet())
 	tkisoMapPF = tkisoMapH.product();          
       
       const reco::RecoEcalCandidateIsolationMap* detaMapPF = 0;
-      event.getByToken(detaToken, detaMapH);
+      iEvt.getByToken(detaToken, detaMapH);
       if (!detaMapH.failedToGet())
 	detaMapPF = detaMapH.product();
 
       const reco::RecoEcalCandidateIsolationMap* detaSeedMapPF = 0;
-      event.getByToken(detaSeedToken, detaSeedMapH);
+      iEvt.getByToken(detaSeedToken, detaSeedMapH);
       if (!detaSeedMapH.failedToGet())
 	detaSeedMapPF = detaSeedMapH.product();
       
       const reco::RecoEcalCandidateIsolationMap* dphiMapPF = 0;
-      event.getByToken(dphiToken, dphiMapH);
+      iEvt.getByToken(dphiToken, dphiMapH);
       if (!dphiMapH.failedToGet()) 
 	dphiMapPF = dphiMapH.product();
       
       const reco::RecoEcalCandidateIsolationMap* eopMapPF = 0;
-      event.getByToken(eopToken, eopMapH);
+      iEvt.getByToken(eopToken, eopMapH);
       if (!eopMapH.failedToGet()) 
 	eopMapPF = eopMapH.product();
 
       const reco::RecoEcalCandidateIsolationMap* chi2MapPF = 0;
-      event.getByToken(chi2Token, chi2MapH);
+      iEvt.getByToken(chi2Token, chi2MapH);
       if (!chi2MapH.failedToGet()) 
 	chi2MapPF = chi2MapH.product();
 
       const reco::RecoEcalCandidateIsolationMap* mishitsMapPF = 0;
-      event.getByToken(mishitsToken, mishitsMapH);
+      iEvt.getByToken(mishitsToken, mishitsMapH);
       if (!mishitsMapH.failedToGet()) 
 	mishitsMapPF = mishitsMapH.product();
 
       const reco::RecoEcalCandidateIsolationMap* hitsMapPF = 0;
-      event.getByToken(hitsToken, hitsMapH);
+      iEvt.getByToken(hitsToken, hitsMapH);
       if (!hitsMapH.failedToGet()) 
 	hitsMapPF = hitsMapH.product();
       
@@ -549,9 +555,13 @@ void plotDistr::analyze(const edm::Event& event, const edm::EventSetup& iSetup) 
 void plotDistr::beginJob() {
   f = new TFile(outputFileName.c_str(), "recreate");
   t = new TTree("tree", "tree");
+
+  t->Branch("nRun", &nRun, "nRun/I");
+  t->Branch("nEvt", &nEvt, "nEvt/I");
+  t->Branch("nLumi", &nLumi, "nLumi/I");
   
-  t->Branch("pass", &passSel, "pass/I");
-  t->Branch("nvtx", &nvtx, "nvtx/I");
+  t->Branch("accPath", &accPath, "accPath/I");
+  t->Branch("nVtx", &nVtx, "nVtx/I");
   t->Branch("rho",  &rho, "rho/F");
   
   if (newClustering) {
@@ -616,7 +626,7 @@ void plotDistr::endJob() {
 }
 
 void plotDistr::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
-  //The following says we do not know what parameters are allowed so do no validation
+  // The following says we do not know what parameters are allowed so do no validation
   // Please change this to state exactly what you do use, even if it is no parameters
   edm::ParameterSetDescription desc;
   desc.setUnknown();

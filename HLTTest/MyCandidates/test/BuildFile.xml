@@ -1,0 +1,17 @@
+<library   name="HLTTestMyCandidatesTest" file="*.cc">
+  <use   name="DataFormats/Common"/>
+  <use   name="DataFormats/EgammaReco"/>
+  <use   name="DataFormats/GsfTrackReco"/>
+  <use   name="DataFormats/ParticleFlowCandidate"/>
+  <use   name="DataFormats/ParticleFlowReco"/>
+  <use   name="FWCore/Framework"/>
+  <use   name="FWCore/MessageLogger"/>
+  <use   name="FWCore/ParameterSet"/>
+  <use   name="RecoParticleFlow/PFProducer"/>
+  <use   name="HLTrigger/HLTcore"/>
+  <use   name="clhep"/>
+  <use   name="root"/>
+  <use   name="roottmva"/>
+  <flags   EDM_PLUGIN="1"/>
+<flags CXXFLAGS="-O0 -g3 -fno-inline"></flags>
+</library>

@@ -136,18 +136,19 @@ void tnpOn() {
    setTDRStyle();
 
    // Everything to tinker with should be here
-   Double_t yMin_b = .001, yMax_b = 199999.;
-   Double_t yMin_e = .001, yMax_e = 79999.;
+   Double_t yMin_b = .001, yMax_b = 69999.;
+   Double_t yMin_e = .001, yMax_e = 19999.;
 
-   string varName[5];
-   varName[0] = "ecc";
+   string varName[5], outPre;
+   varName[0] = "mee";
+   outPre = "dyll_";
 
-   Bool_t drawLog = true;
+   Bool_t drawLog = false;
    Double_t cut_b = -1., cut_e = -1.;
 
    // -------------------------------------------------- //
 
-   string hisLeg = "Flat HF", pntLeg = "Data", pntLeg2 = "Std";
+   string hisLeg = "Full Mult.", pntLeg = "HLT Tuned", pntLeg2 = "HLT Std.";
 
    Int_t meeb_nBin = 82, meee_nBin = 82;
    Double_t meeb_max = 110.5, meee_max = 110.5;
@@ -244,28 +245,28 @@ void tnpOn() {
 
    }
 
-   if (varName[0] == "eca") {
+   if (varName[0] == "ecu" or varName[0] == "eca") {
 
      varName[1] = "EcalIso";
      varName[2] = "EcalIso (GeV)";
 
    }
 
-   if (varName[0] == "ecu" or varName[0] == "ecc") {
+   if (varName[0] == "ecc") {
 
      varName[1] = "Relative EcalIso";
      varName[2] = "EcalIso / E_{T}";
 
    }
 
-   if (varName[0] == "hca") {
+   if (varName[0] == "hcu" or varName[0] == "hca") {
 
      varName[1] = "HcalIso";
      varName[2] = "HcalIso (GeV)";
 
    }
 
-   if (varName[0] == "hcu" or varName[0] == "hcc") {
+   if (varName[0] == "hcc") {
 
      varName[1] = "Relative HcalIso";
      varName[2] = "HcalIso / E_{T}";
@@ -324,7 +325,7 @@ void tnpOn() {
    // -------------------------------------------------- //
 
    TH1::SetDefaultSumw2(true);
-   //TGaxis::SetMaxDigits(3);
+   TGaxis::SetMaxDigits(3);
 
    TH1D* mee_1b = new TH1D("mee_1b", (varName[1] + " Distribution").c_str(), meeb_nBin, meeb_min, meeb_max);
    TH1D* mee_1e = new TH1D("mee_1e", (varName[1] + " Distribution").c_str(), meee_nBin, meee_min, meee_max);
@@ -557,11 +558,13 @@ void tnpOn() {
 
    // -------------------------------------------------- //
 
-   string const inDir = "/home/ieeya/Downloads/HLT_Val/dev/e_74x/file/v15p1/";
+   string const inDir = "/home/ieeya/Downloads/HLT_Val/dev/e_80x/file/v0p4/";
 
    TChain *t1 = new TChain("eleDistr");
-   t1->Add((inDir + "skim_p1dat_*.root").c_str());
-   t1->Add((inDir + "skim_m1mcStd_m2mcHFFlat_mcRun2v9.root").c_str());
+   t1->Add((inDir + "dat_p1Tune_*.root").c_str());
+   t1->Add((inDir + "dat_p2Std_*.root").c_str());
+   t1->Add((inDir + "dat_p3Full_*.root").c_str());
+   t1->Add((inDir + "dyll_m1Tune_m2Std_m3Full.root").c_str());
 
    //TFile *f1 = new TFile((inDir + "xxx.root").c_str());
    //TTree *t1 = (TTree *) f1->Get("eleDistr");
@@ -648,7 +651,7 @@ void tnpOn() {
          //p4Tag.SetPtEtaPhiE(etr[iTag], eta[iTag], phi[iTag], er[iTag]);
          //p4Probe.SetPtEtaPhiE(etr[iProbe], eta[iProbe], phi[iProbe], er[iProbe]);
 
-         if (type == 1) {
+         if (type == -1) {
 
            if (fabs(eta[iProbe]) < 1.4791) {
 
@@ -698,7 +701,7 @@ void tnpOn() {
 
          }
 
-         if (type == -2) {
+         if (type == -3) {
 
            if (fabs(eta[iProbe]) < 1.4791) {
 
@@ -748,7 +751,7 @@ void tnpOn() {
 
          }
 
-         if (type == -1) {
+         if (type == -2) {
 
            if (fabs(eta[iProbe]) < 1.4791) {
 
@@ -808,8 +811,8 @@ void tnpOn() {
 
    //mee_2b->Scale(mee_1b->Integral() / mee_2b->Integral()); mee_2e->Scale(mee_1e->Integral() / mee_2e->Integral());
 
-   static const Int_t nStep_b = eccb_nBin + 1, nStep_e = ecce_nBin + 1;
-   Double_t sStep_b = (eccb_max - eccb_min) / eccb_nBin, sStep_e = (ecce_max - ecce_min) / ecce_nBin;
+   static const Int_t nStep_b = meeb_nBin + 1, nStep_e = meee_nBin + 1;
+   Double_t sStep_b = (meeb_max - meeb_min) / meeb_nBin, sStep_e = (meee_max - meee_min) / meee_nBin;
 
    Float_t l1b[nStep_b], eff_xb[nStep_b];
    Float_t l1e[nStep_e], eff_xe[nStep_e];
@@ -818,7 +821,7 @@ void tnpOn() {
    for (Int_t bb = 0; bb < nStep_b; bb++) {
 
      l1b[bb] = 1.;
-     eff_xb[bb] = (bb * sStep_b) + eccb_min;
+     eff_xb[bb] = (bb * sStep_b) + meeb_min;
 
      std_xb[bb] = cut_b;
      if (bb == 0) std_yb[bb] = yMax_b;
@@ -830,7 +833,7 @@ void tnpOn() {
    for (Int_t ee = 0; ee < nStep_e; ee++) {
 
      l1e[ee] = 1.;
-     eff_xe[ee] = (ee * sStep_e) + ecce_min;
+     eff_xe[ee] = (ee * sStep_e) + meee_min;
 
      std_xe[ee] = cut_e;
      if (ee == 0) std_ye[ee] = yMax_e;
@@ -839,21 +842,21 @@ void tnpOn() {
 
    }
 
-   TGraph *lineb = new TGraph(eccb_nBin + 1, eff_xb, l1b);
+   TGraph *lineb = new TGraph(meeb_nBin + 1, eff_xb, l1b);
    lineb->SetLineColor(kYellow + 1);
    lineb->SetLineWidth(2);
 
-   TGraph *linee = new TGraph(ecce_nBin + 1, eff_xe, l1e);
+   TGraph *linee = new TGraph(meee_nBin + 1, eff_xe, l1e);
    linee->SetLineColor(kYellow + 1);
    linee->SetLineWidth(2);
 
-   TH1D *sfb = new TH1D("", "", eccb_nBin, eccb_min, eccb_max);
-   sfb->Divide(ecc_1b, ecc_2b, 1., 1., "B");
+   TH1D *sfb = new TH1D("", "", meeb_nBin, meeb_min, meeb_max);
+   sfb->Divide(mee_1b, mee_2b, 1., 1., "B");
    styleHist(sfb, kBlack, 0, 2, 1, 1.0);
    axHist(sfb, 0.001, 1.999, varName[4], 0.061, 0.49, 0.059, varName[2], 0.061, 1.15, 0.059);
 
-   TH1D *sfe = new TH1D("", "", ecce_nBin, ecce_min, ecce_max);
-   sfe->Divide(ecc_1e, ecc_2e, 1., 1., "B");
+   TH1D *sfe = new TH1D("", "", meee_nBin, meee_min, meee_max);
+   sfe->Divide(mee_1e, mee_2e, 1., 1., "B");
    styleHist(sfe, kBlack, 0, 2, 1, 1.0);
    axHist(sfe, 0.001, 1.999, varName[4], 0.061, 0.49, 0.059, varName[2], 0.061, 1.15, 0.059);
 
@@ -878,26 +881,26 @@ void tnpOn() {
 
    }
 
-   axHist(ecc_2b, yMin_b, yMax_b, varName[3], 0.027, 1.05, 0.025, varName[2], 0.027, 1.15, 0.025);
-   axHist(ecc_2e, yMin_e, yMax_e, varName[3], 0.027, 1.05, 0.025, varName[2], 0.027, 1.15, 0.025);
+   axHist(mee_2b, yMin_b, yMax_b, varName[3], 0.027, 1.05, 0.025, varName[2], 0.027, 1.15, 0.025);
+   axHist(mee_2e, yMin_e, yMax_e, varName[3], 0.027, 1.05, 0.025, varName[2], 0.027, 1.15, 0.025);
 
    TLegend *leg01 = new TLegend(.71, .67, .89, .85);
-   //leg01->SetHeader("EB Tag and EB Probe");
-   leg01->SetHeader("#left|#eta^{e}#right| < 1.479");
-   leg01->AddEntry(ecc_2b, (hisLeg).c_str(), "f");
-   leg01->AddEntry(ecc_1b, (pntLeg).c_str(), "p");
-   leg01->AddEntry(ecc_3b, (pntLeg2).c_str(), "l");
+   leg01->SetHeader("EB Tag and EB Probe");
+   //leg01->SetHeader("#left|#eta^{e}#right| < 1.479");
+   leg01->AddEntry(mee_2b, (hisLeg).c_str(), "f");
+   leg01->AddEntry(mee_1b, (pntLeg).c_str(), "p");
+   leg01->AddEntry(mee_3b, (pntLeg2).c_str(), "l");
    leg01->SetFillColor(0);
    leg01->SetBorderSize(0);
    leg01->SetTextSize(0.03);
    leg01->SetTextFont(42);
 
    TLegend *leg02 = new TLegend(.71, .67, .89, .85);
-   //leg02->SetHeader("!(EB Tag and EB Probe)");
-   leg02->SetHeader("#left|#eta^{e}#right| > 1.479");
-   leg02->AddEntry(ecc_2e, (hisLeg).c_str(), "f");
-   leg02->AddEntry(ecc_1e, (pntLeg).c_str(), "p");
-   leg02->AddEntry(ecc_3e, (pntLeg2).c_str(), "l");
+   leg02->SetHeader("!(EB Tag and EB Probe)");
+   //leg02->SetHeader("#left|#eta^{e}#right| > 1.479");
+   leg02->AddEntry(mee_2e, (hisLeg).c_str(), "f");
+   leg02->AddEntry(mee_1e, (pntLeg).c_str(), "p");
+   leg02->AddEntry(mee_3e, (pntLeg2).c_str(), "l");
    leg02->SetFillColor(0);
    leg02->SetBorderSize(0);
    leg02->SetTextSize(0.03);
@@ -905,7 +908,7 @@ void tnpOn() {
 
    // -------------------------------------------------- //
 
-   string const outDir = inDir + "plot_mcRun2v9/";
+   string const outDir = inDir + "plot/";
 
    TCanvas *c01 = new TCanvas("c01", "c01", 200, 10, 1000, 1000);
    TCanvas *c02 = new TCanvas("c02", "c02", 200, 10, 1000, 1000);
@@ -918,14 +921,14 @@ void tnpOn() {
    pad1->cd();
 
    if (drawLog) pad1->SetLogy();
-   ecc_2b->Draw("hist");
-   ecc_1b->Draw("pesame");
-   ecc_3b->Draw("histsame");
+   mee_2b->Draw("hist");
+   mee_1b->Draw("pesame");
+   mee_3b->Draw("histsame");
    stdb->Draw("same");
 
    leg01->Draw();
-   //txt.DrawLatexNDC(0.06, 0.928, "#bf{CMS} #it{Preliminary}");
-   txt.DrawLatexNDC(0.783, 0.933, "2.081 fb^{-1} (13 TeV)");
+   txt.DrawLatexNDC(0.11, 0.928, "#bf{CMS} #it{Preliminary}");
+   txt.DrawLatexNDC(0.783, 0.933, "2.138 fb^{-1} (13 TeV)");
 
    c01->cd();
    TPad *pad2 = new TPad("pad2", "pad2", 0., 0., 1., 0.29);
@@ -939,7 +942,7 @@ void tnpOn() {
    sfb->Draw("same");
 
    c01->cd();
-   c01->SaveAs((outDir + "hlt_" + varName[0] + "_bar.pdf").c_str());
+   c01->SaveAs((outDir + outPre + varName[0] + "_bar.pdf").c_str());
 
    c02->cd();
 
@@ -949,14 +952,14 @@ void tnpOn() {
    pad3->cd();
 
    if (drawLog) pad3->SetLogy();
-   ecc_2e->Draw("hist");
-   ecc_1e->Draw("pesame");
-   ecc_3e->Draw("histsame");
+   mee_2e->Draw("hist");
+   mee_1e->Draw("pesame");
+   mee_3e->Draw("histsame");
    stde->Draw("same");
 
    leg02->Draw();
-   //txt.DrawLatexNDC(0.06, 0.928, "#bf{CMS} #it{Preliminary}");
-   txt.DrawLatexNDC(0.783, 0.933, "2.081 fb^{-1} (13 TeV)");
+   txt.DrawLatexNDC(0.11, 0.928, "#bf{CMS} #it{Preliminary}");
+   txt.DrawLatexNDC(0.783, 0.933, "2.138 fb^{-1} (13 TeV)");
 
    c02->cd();
    TPad *pad4 = new TPad("pad4", "pad4", 0., 0., 1., 0.29);
@@ -970,7 +973,7 @@ void tnpOn() {
    sfe->Draw("same");
 
    c02->cd();
-   c02->SaveAs((outDir + "hlt_" + varName[0] + "_end.pdf").c_str());
+   c02->SaveAs((outDir + outPre + varName[0] + "_end.pdf").c_str());
 
    // -------------------------------------------------- //
 
