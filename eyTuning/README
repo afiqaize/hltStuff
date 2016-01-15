@@ -1,5 +1,7 @@
 Electron WP Optimization Steps
 
+NOTE: Somewhat outdated
+
 1- Skim the dataset of interest with a loose point e.g. HLT_Ele27_eta2p1_Cut1p0_Gsf_v1 of wp75_v16_nTuple.py
 2- Use Matteo's code hltcode/HLTTest [1] to make the flat tuples
 3- Reset the endPass() and barPass() of tunePlot.cxx to the loose point (line 23) and the tuples to be considered (line 223)
