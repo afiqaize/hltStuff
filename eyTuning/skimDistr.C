@@ -1,5 +1,6 @@
 // Updated version of makeDistr.C that performs some initial skimming
 // Jan 14: Added accPath cut to reject failing events and bugfixes
+// Usage: root -l skimDistr.C
 
 #include "TFile.h"
 #include "TTree.h"

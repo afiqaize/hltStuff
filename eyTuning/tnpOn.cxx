@@ -1,6 +1,7 @@
 // Stolen from mvaPlot in 740
 // For the tnp hlt vs reco electron plotting
 // Nov 25 updated and streamlined
+// Usage: root -l tnpOn.cxx++
 
 #include "iostream"
 #include <iomanip>
