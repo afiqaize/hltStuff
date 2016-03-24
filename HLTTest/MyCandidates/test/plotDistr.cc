@@ -543,30 +543,28 @@ void plotDistr::beginJob() {
   t->Branch("nVtx", &nVtx, "nVtx/I");
   t->Branch("rho",  &rho, "rho/F");
   
-  if (newClustering) {
-    t->Branch("npf",  &npf, "npf/I");
-    t->Branch("epf", &epf, "epf[npf]/F");
-    t->Branch("eRawpf", &eRawpf, "eRawpf[npf]/F");
-    t->Branch("etpf", &etpf, "etpf[npf]/F");
-    t->Branch("etRawpf", &etRawpf, "etRawpf[npf]/F");
-    t->Branch("etapf", &etapf, "etapf[npf]/F");
-    t->Branch("phipf", &phipf, "phipf[npf]/F");
-    t->Branch("sieiepf", &sieiepf, "sieiepf[npf]/F");
-    t->Branch("ecalpf", &ecalpf, "ecalpf[npf]/F");
-    t->Branch("dphipf", &dphipf, "dphipf[npf]/F");
-    t->Branch("detapf", &detapf, "detapf[npf]/F");
-    t->Branch("detaseedpf", &detaseedpf, "detaseedpf[npf]/F");
-    t->Branch("tkptpf",  &tkptpf, "tkptpf[npf]/F");
-    t->Branch("tketapf", &tketapf, "tketapf[npf]/F");
-    t->Branch("tkphipf", &tkphipf, "tkphipf[npf]/F");
-    t->Branch("hoepf",   &hoepf, "hoepf[npf]/F");
-    t->Branch("hcalpf",   &hcalpf, "hcalpf[npf]/F");
-    t->Branch("tkisopf",   &tkisopf, "tkisopf[npf]/F");
-    t->Branch("eoppf", &eoppf, "eoppf[npf]/F");
-    t->Branch("chi2pf", &chi2pf, "chi2pf[npf]/F");
-    t->Branch("mishitspf", &mishitspf, "mishitspf[npf]/I");
-    t->Branch("hitspf", &hitspf, "hitspf[npf]/I");
-  }
+  t->Branch("npf",  &npf, "npf/I");
+  t->Branch("epf", &epf, "epf[npf]/F");
+  t->Branch("eRawpf", &eRawpf, "eRawpf[npf]/F");
+  t->Branch("etpf", &etpf, "etpf[npf]/F");
+  t->Branch("etRawpf", &etRawpf, "etRawpf[npf]/F");
+  t->Branch("etapf", &etapf, "etapf[npf]/F");
+  t->Branch("phipf", &phipf, "phipf[npf]/F");
+  t->Branch("sieiepf", &sieiepf, "sieiepf[npf]/F");
+  t->Branch("ecalpf", &ecalpf, "ecalpf[npf]/F");
+  t->Branch("dphipf", &dphipf, "dphipf[npf]/F");
+  t->Branch("detapf", &detapf, "detapf[npf]/F");
+  t->Branch("detaseedpf", &detaseedpf, "detaseedpf[npf]/F");
+  t->Branch("tkptpf",  &tkptpf, "tkptpf[npf]/F");
+  t->Branch("tketapf", &tketapf, "tketapf[npf]/F");
+  t->Branch("tkphipf", &tkphipf, "tkphipf[npf]/F");
+  t->Branch("hoepf",   &hoepf, "hoepf[npf]/F");
+  t->Branch("hcalpf",   &hcalpf, "hcalpf[npf]/F");
+  t->Branch("tkisopf",   &tkisopf, "tkisopf[npf]/F");
+  t->Branch("eoppf", &eoppf, "eoppf[npf]/F");
+  t->Branch("chi2pf", &chi2pf, "chi2pf[npf]/F");
+  t->Branch("mishitspf", &mishitspf, "mishitspf[npf]/I");
+  t->Branch("hitspf", &hitspf, "hitspf[npf]/I");
 
   if (saveReco) {
     t->Branch("reco_n",   &reco_n,   "reco_n/I");
