@@ -208,7 +208,6 @@ void plotDistr::beginRun(const edm::Run& run,const edm::EventSetup& setup) {
 plotDistr::plotDistr(const edm::ParameterSet& iParSet) {
   outputFileName  = iParSet.getParameter<std::string>("OutputFileName");
   isData          = iParSet.getParameter<bool>("isData");
-  newClustering   = iParSet.getParameter<bool>("activateNewClustering");
   saveReco        = iParSet.getParameter<bool>("saveReco");
   pathNames_      = iParSet.getParameter<std::vector<std::string> >("trgSelection");
   trigResultsTag_ = iParSet.getParameter<edm::InputTag>("trgResults");
@@ -285,7 +284,7 @@ void plotDistr::analyze(const edm::Event& iEvt, const edm::EventSetup& iSetup) {
   iEvt.getByToken(trgResToken,trigResultsHandle);
 
   const edm::TriggerResults& trigResults = *trigResultsHandle;
-  const edm::TriggerNames& trigNames = iEvt.triggerNames(trigResults);  
+  const edm::TriggerNames& trigNames = iEvt.triggerNames(trigResults);
 
   accPath = 0; 
   for(size_t pathNr=0;pathNr<pathNames_.size();pathNr++){
@@ -349,39 +348,24 @@ void plotDistr::analyze(const edm::Event& iEvt, const edm::EventSetup& iSetup) {
       reco::GsfElectron::PflowIsolationVariables pfIso = el->pfIsolationVariables();
 
       reco_e[reco_n] = el->superCluster()->energy();
-
       reco_et[reco_n] = el->superCluster()->energy()*sin(el->superCluster()->position().theta());
-
       reco_eRaw[reco_n] = el->superCluster()->rawEnergy();
-
       reco_etRaw[reco_n] = el->superCluster()->rawEnergy()*sin(el->superCluster()->position().theta());
 
       reco_pt[reco_n] = el->pt();
-
       reco_eta[reco_n] = el->superCluster()->eta();
-
       reco_phi[reco_n] = el->superCluster()->phi();
 
       reco_sieie[reco_n] = el->full5x5_sigmaIetaIeta();
-
       reco_hoe[reco_n] = el->hadronicOverEm();
-
       reco_ecal[reco_n] = (*recoEcalMap)[el];
-
       reco_hcal[reco_n] = (*recoHcalMap)[el];
-
       reco_eop[reco_n] = ( 1. / el->superCluster()->energy() ) - ( 1. / el->gsfTrack()->p() );
-
       reco_mishits[reco_n] = el->gsfTrack()->hitPattern().numberOfHits(reco::HitPattern::MISSING_INNER_HITS);
-
       reco_deta[reco_n] = el->deltaEtaSuperClusterTrackAtVtx();
-
       reco_detaseed[reco_n] = el->deltaEtaSeedClusterTrackAtVtx();
-
       reco_dphi[reco_n] = el->deltaPhiSuperClusterTrackAtVtx();
-
       reco_chi2[reco_n] = el->gsfTrack()->normalizedChi2();
-
       reco_tkiso[reco_n] = pfIso.sumChargedHadronPt;
 
       //std::cout << "plotReco: " << reco_et[reco_n] << " " << reco_eta[reco_n] << " " << reco_phi[reco_n] << std::endl;
@@ -389,7 +373,6 @@ void plotDistr::analyze(const edm::Event& iEvt, const edm::EventSetup& iSetup) {
       reco_n++;
 
     }
-
   }
 
   edm::Handle<std::vector<reco::Electron> > eH;
