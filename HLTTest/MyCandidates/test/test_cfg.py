@@ -25,10 +25,7 @@ process.source = cms.Source("PoolSource",
 process.plotDistr = cms.EDAnalyzer("plotDistr",
                                    OutputFileName = cms.string("qcd120_02.root"),
                                    isData = cms.bool(False),
-                                   activateNewClustering = cms.bool(True),
-                                   activateOldClustering = cms.bool(False),
                                    saveReco = cms.bool(False),
-                                   saveUnseeded = cms.bool(True),
                                    trgResults = cms.InputTag("TriggerResults","","NTUPLE"),
                                    trgSelection = cms.vstring("HLT_Ele27_eta2p1_Cut1p0_Gsf_v1",)
                                    )

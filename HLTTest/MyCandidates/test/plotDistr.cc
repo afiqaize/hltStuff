@@ -13,6 +13,8 @@
 // Aug 07 2015: dEtaSeed and other parameters
 // Dec 15 2015: updated to use getByToken for 80X
 // Jan 14 2016: now event metadata is stored too
+// Feb 03 2016: Reverting back to hltPixelVertices for nVtx
+// Mar 07 2016: MC-only PU information and updated genParticle info
 
 #include <memory>
 
@@ -47,6 +49,7 @@
 
 #include "DataFormats/VertexReco/interface/Vertex.h"
 #include "DataFormats/VertexReco/interface/VertexFwd.h"
+#include "SimDataFormats/PileupSummaryInfo/interface/PileupSummaryInfo.h"
 
 #include "RecoLocalCalo/HcalRecAlgos/interface/HcalSeverityLevelComputer.h"
 #include "RecoLocalCalo/HcalRecAlgos/interface/HcalSeverityLevelComputerRcd.h"
@@ -104,6 +107,7 @@ private:
 
   edm::EDGetTokenT<reco::GenParticleCollection> genToken;
   edm::EDGetTokenT<reco::VertexCollection> vtxToken;
+  edm::EDGetTokenT< std::vector<PileupSummaryInfo> > puToken;
 
   edm::EDGetTokenT<std::vector<reco::GsfElectron> > elToken;
   edm::EDGetTokenT<std::vector<reco::Electron> > eToken;
@@ -133,7 +137,7 @@ private:
   
   Float_t rho;
   Int_t nRun, nEvt, nLumi, accPath;
-  Int_t n, npf, gp_n, reco_n;
+  Int_t npf, gp_n, reco_n;
   Float_t epf[10];
   Float_t eRawpf[10];
   Float_t eoppf[10];  
@@ -183,10 +187,13 @@ private:
   Float_t reco_tkiso[10];
 
   Int_t nVtx;
+  Int_t nBX;
+  Int_t BX[100];
+  Int_t nPUtrue;
+  Int_t nPUobs[100];
 
   bool isData;
   bool saveReco;
-  bool newClustering;
 
 };
 
@@ -208,7 +215,8 @@ plotDistr::plotDistr(const edm::ParameterSet& iParSet) {
 
   trgResToken     = consumes<edm::TriggerResults>(trigResultsTag_);
   genToken        = consumes<reco::GenParticleCollection>(edm::InputTag("genParticles"));
-  vtxToken        = consumes<reco::VertexCollection>(edm::InputTag("hltPixelVerticesElectrons"));
+  vtxToken        = consumes<reco::VertexCollection>(edm::InputTag("hltPixelVertices"));
+  puToken         = consumes<std::vector<PileupSummaryInfo> >(edm::InputTag("addPileupInfo"));
 
   elToken         = consumes<std::vector<reco::GsfElectron> >(edm::InputTag("gedGsfElectrons"));
   //eToken        = consumes<std::vector<reco::Electron> >(edm::InputTag("hltEgammaCandidates"));
@@ -256,7 +264,7 @@ void plotDistr::mcTruth(edm::Handle<reco::GenParticleCollection> gpH) {
     
     const reco::GenParticleRef gp(gpH, i);
     
-    if (gp->status() == 3 and abs(gp->pdgId()) == 11) {
+    if ((gp->status() == 23 or gp->status() == 24) and abs(gp->pdgId()) == 11) {
       if (gp->pt() > 0.) {
 	gp_pt[gp_n]  = gp->pt();
 	gp_eta[gp_n] = gp->eta();
@@ -287,9 +295,23 @@ void plotDistr::analyze(const edm::Event& iEvt, const edm::EventSetup& iSetup) {
   }
 
   edm::Handle<reco::GenParticleCollection> gpH;
+  edm::Handle<std::vector<PileupSummaryInfo> > puH;
+
+  nBX = 0;
   if (!isData) {
+
     iEvt.getByToken(genToken, gpH);
     mcTruth(gpH);
+
+    iEvt.getByToken(puToken, puH);
+    nPUtrue = puH->begin()->getTrueNumInteractions();
+    std::vector<PileupSummaryInfo>::const_iterator pu;
+
+    for(pu = puH->begin(); pu != puH->end(); ++pu) {
+      BX[nBX]      = pu->getBunchCrossing();
+      nPUobs[nBX]  = pu->getPU_NumInteractions();
+      nBX++;
+    }
   }
 
   if (saveReco) {
@@ -401,147 +423,121 @@ void plotDistr::analyze(const edm::Event& iEvt, const edm::EventSetup& iSetup) {
   else
     rho = 9999.;
 
-  if (newClustering) {
-    iEvt.getByToken(cToken, cH);
+  npf = 0;
+  iEvt.getByToken(cToken, cH);
+  if (!cH.failedToGet()) {
     
-    npf = 0;
-    if (!cH.failedToGet()) {
-    
-      const reco::RecoEcalCandidateIsolationMap* sieieMapPF = 0;
-      iEvt.getByToken(sieieToken, sieieMapH);
-      if (!sieieMapH.failedToGet())  
-	sieieMapPF = sieieMapH.product();
+    const reco::RecoEcalCandidateIsolationMap* sieieMapPF = 0;
+    iEvt.getByToken(sieieToken, sieieMapH);
+    if (!sieieMapH.failedToGet())  
+      sieieMapPF = sieieMapH.product();
       
-      const reco::RecoEcalCandidateIsolationMap* ecalMapPF = 0;
-      iEvt.getByToken(ecalToken, ecalMapH);
-      if (!ecalMapH.failedToGet()) 
-	ecalMapPF = ecalMapH.product(); 
+    const reco::RecoEcalCandidateIsolationMap* ecalMapPF = 0;
+    iEvt.getByToken(ecalToken, ecalMapH);
+    if (!ecalMapH.failedToGet()) 
+      ecalMapPF = ecalMapH.product(); 
       
-      const reco::RecoEcalCandidateIsolationMap* hcalMapPF  = 0;
-      iEvt.getByToken(hcalToken, hcalMapH);
-      if (!hcalMapH.failedToGet()) 
-	hcalMapPF = hcalMapH.product(); 
+    const reco::RecoEcalCandidateIsolationMap* hcalMapPF = 0;
+    iEvt.getByToken(hcalToken, hcalMapH);
+    if (!hcalMapH.failedToGet()) 
+      hcalMapPF = hcalMapH.product(); 
       
-      const reco::RecoEcalCandidateIsolationMap* hoeMapPF = 0;
-      iEvt.getByToken(hoeToken, hoeMapH);
-      if (!hoeMapH.failedToGet()) 
-	hoeMapPF = hoeMapH.product(); 
+    const reco::RecoEcalCandidateIsolationMap* hoeMapPF = 0;
+    iEvt.getByToken(hoeToken, hoeMapH);
+    if (!hoeMapH.failedToGet()) 
+      hoeMapPF = hoeMapH.product(); 
       
-      const reco::RecoEcalCandidateIsolationMap* tkisoMapPF = 0;
-      iEvt.getByToken(tkisoToken, tkisoMapH);
-      if (!tkisoMapH.failedToGet())
-	tkisoMapPF = tkisoMapH.product();          
+    const reco::RecoEcalCandidateIsolationMap* tkisoMapPF = 0;
+    iEvt.getByToken(tkisoToken, tkisoMapH);
+    if (!tkisoMapH.failedToGet())
+      tkisoMapPF = tkisoMapH.product();          
       
-      const reco::RecoEcalCandidateIsolationMap* detaMapPF = 0;
-      iEvt.getByToken(detaToken, detaMapH);
-      if (!detaMapH.failedToGet())
-	detaMapPF = detaMapH.product();
+    const reco::RecoEcalCandidateIsolationMap* detaMapPF = 0;
+    iEvt.getByToken(detaToken, detaMapH);
+    if (!detaMapH.failedToGet())
+      detaMapPF = detaMapH.product();
 
-      const reco::RecoEcalCandidateIsolationMap* detaSeedMapPF = 0;
-      iEvt.getByToken(detaSeedToken, detaSeedMapH);
-      if (!detaSeedMapH.failedToGet())
-	detaSeedMapPF = detaSeedMapH.product();
+    const reco::RecoEcalCandidateIsolationMap* detaSeedMapPF = 0;
+    iEvt.getByToken(detaSeedToken, detaSeedMapH);
+    if (!detaSeedMapH.failedToGet())
+      detaSeedMapPF = detaSeedMapH.product();
       
-      const reco::RecoEcalCandidateIsolationMap* dphiMapPF = 0;
-      iEvt.getByToken(dphiToken, dphiMapH);
-      if (!dphiMapH.failedToGet()) 
-	dphiMapPF = dphiMapH.product();
+    const reco::RecoEcalCandidateIsolationMap* dphiMapPF = 0;
+    iEvt.getByToken(dphiToken, dphiMapH);
+    if (!dphiMapH.failedToGet()) 
+      dphiMapPF = dphiMapH.product();
       
-      const reco::RecoEcalCandidateIsolationMap* eopMapPF = 0;
-      iEvt.getByToken(eopToken, eopMapH);
-      if (!eopMapH.failedToGet()) 
-	eopMapPF = eopMapH.product();
+    const reco::RecoEcalCandidateIsolationMap* eopMapPF = 0;
+    iEvt.getByToken(eopToken, eopMapH);
+    if (!eopMapH.failedToGet()) 
+      eopMapPF = eopMapH.product();
 
-      const reco::RecoEcalCandidateIsolationMap* chi2MapPF = 0;
-      iEvt.getByToken(chi2Token, chi2MapH);
-      if (!chi2MapH.failedToGet()) 
-	chi2MapPF = chi2MapH.product();
+    const reco::RecoEcalCandidateIsolationMap* chi2MapPF = 0;
+    iEvt.getByToken(chi2Token, chi2MapH);
+    if (!chi2MapH.failedToGet()) 
+      chi2MapPF = chi2MapH.product();
 
-      const reco::RecoEcalCandidateIsolationMap* mishitsMapPF = 0;
-      iEvt.getByToken(mishitsToken, mishitsMapH);
-      if (!mishitsMapH.failedToGet()) 
-	mishitsMapPF = mishitsMapH.product();
+    const reco::RecoEcalCandidateIsolationMap* mishitsMapPF = 0;
+    iEvt.getByToken(mishitsToken, mishitsMapH);
+    if (!mishitsMapH.failedToGet()) 
+      mishitsMapPF = mishitsMapH.product();
 
-      const reco::RecoEcalCandidateIsolationMap* hitsMapPF = 0;
-      iEvt.getByToken(hitsToken, hitsMapH);
-      if (!hitsMapH.failedToGet()) 
-	hitsMapPF = hitsMapH.product();
+    const reco::RecoEcalCandidateIsolationMap* hitsMapPF = 0;
+    iEvt.getByToken(hitsToken, hitsMapH);
+    if (!hitsMapH.failedToGet()) 
+      hitsMapPF = hitsMapH.product();
       
-      for (unsigned int i=0; i<cH->size(); i++) {
-	if (npf == 9)
-	  continue;
-	epf[npf] = 9999.;
-	eRawpf[npf] = 9999.;
-	eoppf[npf] = 9999.;
-	etpf[npf] = 9999.;
-	etRawpf[npf] = 9999.;
-	etapf[npf] = 9999.;
-	phipf[npf] = 9999.;
-	sieiepf[npf] = 9999.;
-	ecalpf[npf] = 9999;
-	detapf[npf] = 9999.;
-	detaseedpf[npf] = 9999.;
-	dphipf[npf] = 9999.;
-	tkptpf[npf] = 9999.;
-	tketapf[npf] = 9999.;
-	tkphipf[npf] = 9999.;
-	hcalpf[npf] = 9999.;
-	hoepf[npf] = 9999.;
-	tkisopf[npf] = 9999.;
-	mishitspf[npf] = 9999.;
-	chi2pf[npf] = 9999.;
-	hitspf[npf] = 9999.;
+    for (unsigned int i=0; i<cH->size(); i++) {
+      if (npf >= 9) continue;
 
-	reco::RecoEcalCandidateRef c(cH, i);
+      epf[npf] = 9999.;
+      eRawpf[npf] = 9999.;
+      eoppf[npf] = 9999.;
+      etpf[npf] = 9999.;
+      etRawpf[npf] = 9999.;
+      etapf[npf] = 9999.;
+      phipf[npf] = 9999.;
+      sieiepf[npf] = 9999.;
+      ecalpf[npf] = 9999;
+      detapf[npf] = 9999.;
+      detaseedpf[npf] = 9999.;
+      dphipf[npf] = 9999.;
+      tkptpf[npf] = 9999.;
+      tketapf[npf] = 9999.;
+      tkphipf[npf] = 9999.;
+      hcalpf[npf] = 9999.;
+      hoepf[npf] = 9999.;
+      tkisopf[npf] = 9999.;
+      mishitspf[npf] = 9999.;
+      chi2pf[npf] = 9999.;
+      hitspf[npf] = 9999.;
 
-	epf[npf] = c->superCluster()->energy();
-	eRawpf[npf] = c->superCluster()->rawEnergy();
-	etpf[npf] = c->superCluster()->energy()*sin(c->superCluster()->position().theta());
-	etRawpf[npf] = c->superCluster()->rawEnergy()*sin(c->superCluster()->position().theta());
-	etapf[npf] = c->eta();
-	phipf[npf] = c->phi();
+      reco::RecoEcalCandidateRef c(cH, i);
 
-	if (sieieMapPF != 0)
-	  sieiepf[npf] = (*sieieMapPF)[c];
+      epf[npf] = c->superCluster()->energy();
+      eRawpf[npf] = c->superCluster()->rawEnergy();
+      etpf[npf] = c->superCluster()->energy()*sin(c->superCluster()->position().theta());
+      etRawpf[npf] = c->superCluster()->rawEnergy()*sin(c->superCluster()->position().theta());
+      etapf[npf] = c->eta();
+      phipf[npf] = c->phi();
 
-	if (ecalMapPF != 0)
-	  ecalpf[npf] = (*ecalMapPF)[c]; 
+      if (sieieMapPF != 0) sieiepf[npf] = (*sieieMapPF)[c];
+      if (ecalMapPF != 0) ecalpf[npf] = (*ecalMapPF)[c];
+      if (hoeMapPF != 0) hoepf[npf] = (*hoeMapPF)[c];
+      if (hcalMapPF != 0) hcalpf[npf] = (*hcalMapPF)[c];
+      if (detaMapPF != 0) detapf[npf] = ((*detaMapPF)[c]);
+      if (detaSeedMapPF != 0) detaseedpf[npf] = ((*detaSeedMapPF)[c]);
+      if (dphiMapPF != 0) dphipf[npf] = fabs((*dphiMapPF)[c]);
+      if (eopMapPF != 0) eoppf[npf] = fabs((*eopMapPF)[c]);
+      if (mishitsMapPF != 0) mishitspf[npf] = (*mishitsMapPF)[c];
+      if (hitsMapPF != 0) hitspf[npf] = (*hitsMapPF)[c];
+      if (chi2MapPF != 0) chi2pf[npf] = (*chi2MapPF)[c];
+      if (tkisoMapPF != 0) tkisopf[npf] = fabs((*tkisoMapPF)[c]);
 	
-	if (hoeMapPF != 0) 
-	  hoepf[npf] = (*hoeMapPF)[c]; 
-	
-	if (hcalMapPF != 0) 
-	  hcalpf[npf] = (*hcalMapPF)[c]; 
-	
-	if (detaMapPF != 0)
-	  detapf[npf] = ((*detaMapPF)[c]);
+      //std::cout << "plotHLT: " << etpf[npf] << " " << etapf[npf] << " " << phipf[npf] << std::endl;
 
-	if (detaSeedMapPF != 0)
-	  detaseedpf[npf] = ((*detaSeedMapPF)[c]);
-	
-	if (dphiMapPF != 0)
-	  dphipf[npf] = fabs((*dphiMapPF)[c]);
-	
-	if (eopMapPF != 0)
-	  eoppf[npf] = fabs((*eopMapPF)[c]);
-	
-	if (mishitsMapPF != 0)
-	  mishitspf[npf] = (*mishitsMapPF)[c];
+      npf++;
 
-	if (hitsMapPF != 0)
-	  hitspf[npf] = (*hitsMapPF)[c];
-
-	if (chi2MapPF != 0)
-	  chi2pf[npf] = (*chi2MapPF)[c];
-	
-	if (tkisoMapPF != 0)
-	  tkisopf[npf] = fabs((*tkisoMapPF)[c]);
-	
-        //std::cout << "plotHLT: " << etpf[npf] << " " << etapf[npf] << " " << phipf[npf] << std::endl;
-
-	npf++;
-
-      }
     }
   }
 
@@ -612,10 +608,14 @@ void plotDistr::beginJob() {
   }
 
   if (!isData) {
-    t->Branch("gpn",   &gp_n,   "gpn/I");
-    t->Branch("gppt",  &gp_pt,  "gppt[gpn]/F");
+    t->Branch("gpn", &gp_n, "gpn/I");
+    t->Branch("gppt", &gp_pt, "gppt[gpn]/F");
     t->Branch("gpeta", &gp_eta, "gpeta[gpn]/F");
     t->Branch("gpphi", &gp_phi, "gpphi[gpn]/F");
+    t-> Branch("nBX", &nBX, "nBX/I");
+    t-> Branch("BX", BX, "BX[nBX]/I");
+    t-> Branch("nPUtrue", &nPUtrue, "nPUtrue/I");
+    t-> Branch("nPUobs", nPUobs, "nPUobs[nBX]/I");
   }
 }
 
