@@ -15,6 +15,7 @@
 // Jan 14 2016: now event metadata is stored too
 // Feb 03 2016: Reverting back to hltPixelVertices for nVtx
 // Mar 07 2016: MC-only PU information and updated genParticle info
+// Mar 25 2016: Gen event weight
 
 #include <memory>
 
@@ -73,6 +74,7 @@
 #include "DataFormats/RecoCandidate/interface/RecoEcalCandidateIsolation.h"
 
 #include "DataFormats/HepMCCandidate/interface/GenParticle.h"
+#include "SimDataFormats/GeneratorProducts/interface/GenEventInfoProduct.h"
 
 #include "DataFormats/Math/interface/deltaR.h"
 #include "DataFormats/Common/interface/ValueMap.h"
@@ -106,6 +108,7 @@ private:
   edm::EDGetTokenT<edm::TriggerResults> trgResToken;
 
   edm::EDGetTokenT<reco::GenParticleCollection> genToken;
+  edm::EDGetTokenT<GenEventInfoProduct> genEvtToken;
   edm::EDGetTokenT<reco::VertexCollection> vtxToken;
   edm::EDGetTokenT< std::vector<PileupSummaryInfo> > puToken;
 
@@ -163,6 +166,7 @@ private:
   Int_t mishitspf[10];
   Int_t hitspf[10];
 
+  Float_t gevt_wgt;
   Float_t gp_pt[10];
   Float_t gp_eta[10];
   Float_t gp_phi[10];
@@ -214,6 +218,7 @@ plotDistr::plotDistr(const edm::ParameterSet& iParSet) {
 
   trgResToken     = consumes<edm::TriggerResults>(trigResultsTag_);
   genToken        = consumes<reco::GenParticleCollection>(edm::InputTag("genParticles"));
+  genEvtToken     = consumes<GenEventInfoProduct>(edm::InputTag("generator"));
   vtxToken        = consumes<reco::VertexCollection>(edm::InputTag("hltPixelVertices"));
   puToken         = consumes<std::vector<PileupSummaryInfo> >(edm::InputTag("addPileupInfo"));
 
@@ -280,27 +285,31 @@ void plotDistr::analyze(const edm::Event& iEvt, const edm::EventSetup& iSetup) {
   nEvt = iEvt.eventAuxiliary().event();
   nLumi = iEvt.eventAuxiliary().luminosityBlock();
 
-  edm::Handle<edm::TriggerResults> trigResultsHandle;
-  iEvt.getByToken(trgResToken,trigResultsHandle);
+  edm::Handle<edm::TriggerResults> trgResH;
+  iEvt.getByToken(trgResToken, trgResH);
 
-  const edm::TriggerResults& trigResults = *trigResultsHandle;
-  const edm::TriggerNames& trigNames = iEvt.triggerNames(trigResults);
+  const edm::TriggerResults& trgResults = *trgResH;
+  const edm::TriggerNames& trgNames = iEvt.triggerNames(trgResults);
 
   accPath = 0; 
   for(size_t pathNr=0;pathNr<pathNames_.size();pathNr++){
-    size_t pathIndex = trigNames.triggerIndex(pathNames_[pathNr]);
-    if(pathIndex<trigResults.size() &&  trigResults.accept(pathIndex)) 
+    size_t pathIndex = trgNames.triggerIndex(pathNames_[pathNr]);
+    if(pathIndex<trgResults.size() &&  trgResults.accept(pathIndex)) 
       accPath = 1;
   }
 
   edm::Handle<reco::GenParticleCollection> gpH;
+  edm::Handle<GenEventInfoProduct> gEvtH;
   edm::Handle<std::vector<PileupSummaryInfo> > puH;
 
   nBX = 0;
+  gevt_wgt = 0.;
   if (!isData) {
 
     iEvt.getByToken(genToken, gpH);
+    iEvt.getByToken(genEvtToken, gEvtH);
     mcTruth(gpH);
+    gevt_wgt = gEvtH->weight();
 
     iEvt.getByToken(puToken, puH);
     nPUtrue = puH->begin()->getTrueNumInteractions();
@@ -589,6 +598,7 @@ void plotDistr::beginJob() {
   }
 
   if (!isData) {
+    t->Branch("gevt_wgt", &gevt_wgt, "gevt_wgt/F");
     t->Branch("gpn", &gp_n, "gpn/I");
     t->Branch("gppt", &gp_pt, "gppt[gpn]/F");
     t->Branch("gpeta", &gp_eta, "gpeta[gpn]/F");
