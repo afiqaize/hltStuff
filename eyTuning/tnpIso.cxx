@@ -1,6 +1,5 @@
 // Stolen from mvaPlot in 740
-// For the tnp hlt vs reco electron plotting
-// Nov 25 updated and streamlined
+// For the efficiency of some cut as function of some var
 
 #include "iostream"
 #include <iomanip>
@@ -23,113 +22,72 @@
 #include <TLatex.h>
 #include <TBufferFile.h>
 #include <TLorentzVector.h>
-#include "/home/ieeya/root/macros/tdrstyle.C"
+#include "/home/afiqaize/root53434/macros/tdrstyle.C"
 
 using namespace std;
 
-// Subprogram for the tuning
-// One for each region
+Bool_t checkCand(const string setWP, const Float_t eta,
+                 const Float_t sie, const Float_t hoe, const Float_t ecc, const Float_t hcc, 
+                 const Float_t eop, const Float_t chi, const Float_t mih, 
+                 const Float_t des, const Float_t dph, const Float_t tki) {
 
-Bool_t barPass(Float_t sie_cut_b, Float_t hoe_cut_b, Float_t ecc_cut_b, Float_t hcc_cut_b, 
-               Float_t eop_cut_b, Float_t chi_cut_b, Float_t mih_cut_b, 
-               Float_t det_cut_b, Float_t dph_cut_b, Float_t tki_cut_b) {
+  Bool_t candOk = true;
+  Float_t varVal[10], varThr[10];
 
-  Bool_t barOk = false;
+  // Order as in the method call -> HLT filtering
+  varVal[0] = sie; varVal[1] = hoe;
+  varVal[2] = ecc; varVal[3] = hcc;
+  varVal[4] = eop; varVal[5] = chi;
+  varVal[6] = mih; varVal[7] = des;
+  varVal[8] = dph; varVal[9] = tki;
 
-  // All barrel cuts
-
-  if (sie_cut_b <= 0.011) {
-    if (hoe_cut_b <= 0.06) {
-      if (ecc_cut_b <= 0.15) {
-        if (hcc_cut_b <= 0.15) {
-          if (eop_cut_b <= 0.012) {
-            if (dph_cut_b <= 0.02) {
-              if (det_cut_b <= 0.004) {
-                if (tki_cut_b <= 0.08) {
-                  if (mih_cut_b <= 5.5) { // careful at these not 1.0 cuts
-                    if (chi_cut_b <= 15.0)
-                      barOk = true;
-
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
+  if (fabs(eta) < 1.4791 && setWP == "WPLoose") {
+  varThr[0] = 0.011; varThr[1] = 0.06;
+  varThr[2] = 0.145; varThr[3] = 0.15;
+  varThr[4] = 0.012; varThr[5] = 99.0;
+  varThr[6] = 99.0 ; varThr[7] = 0.004;
+  varThr[8] = 0.02 ; varThr[9] = 0.08;
   }
 
-  return barOk;
-
-}
-
-Bool_t endPass(Float_t sie_cut_e, Float_t hoe_cut_e, Float_t ecc_cut_e, Float_t hcc_cut_e, 
-               Float_t eop_cut_e, Float_t chi_cut_e, Float_t mih_cut_e,
-               Float_t det_cut_e, Float_t dph_cut_e, Float_t tki_cut_e) {
-
-  Bool_t endOk = false;
-
-  // All endcap cuts
-
-  if (sie_cut_e <= 0.032) {
-    if (hoe_cut_e <= 0.065) {
-      if (ecc_cut_e <= 0.15) {
-        if (hcc_cut_e <= 0.16) {
-          if (eop_cut_e <= 0.01) {
-            if (dph_cut_e <= 1.0) {
-              if (det_cut_e <= 1.0) {
-                if (tki_cut_e <= 0.08) {
-                  if (mih_cut_e <= 2.5) { // careful at these not 1.0 cuts
-                    if (chi_cut_e <= 2.8)
-                      endOk = true;
-
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
+  else if (fabs(eta) > 1.4791 && setWP == "WPLoose") {
+  varThr[0] = 0.032; varThr[1] = 0.065;
+  varThr[2] = 0.135; varThr[3] = 0.13;
+  varThr[4] = 0.01 ; varThr[5] = 2.8;
+  varThr[6] = 2.5  ; varThr[7] = 0.007;
+  varThr[8] = 0.02 ; varThr[9] = 0.08;
   }
 
-  return endOk;
-
-}
-/*
-Bool_t notFake(Float_t sie_cut, Float_t hoe_cut, Float_t ecc_cut, Float_t hcc_cut, 
-               Float_t eop_cut, Float_t chi_cut, Float_t mih_cut, 
-               Float_t det_cut, Float_t dph_cut, Float_t tki_cut) {
-
-  Bool_t candOk = false;
-
-  if (sie_cut <= .07) {
-    if (hoe_cut <= .31) {
-      if (ecc_cut <= .61) {
-        if (hcc_cut <= .61) {
-          if (eop_cut <= .11) {
-            if (dph_cut <= .11) {
-              if (det_cut <= .031) {
-                if (tki_cut <= .51) {
-                  if (mih_cut <= 5.5) {
-                    if (chi_cut <= 10.1)
-                      candOk = true;
-
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
+  else if (fabs(eta) < 1.4791 && setWP == "WPTight") {
+  varThr[0] = 0.011; varThr[1] = 0.05;
+  varThr[2] = 0.145; varThr[3] = 0.13;
+  varThr[4] = 0.01 ; varThr[5] = 99.0;
+  varThr[6] = 99.0 ; varThr[7] = 0.0035;
+  varThr[8] = 0.015; varThr[9] = 0.06;
   }
+
+  else if (fabs(eta) > 1.4791 && setWP == "WPTight") {
+  varThr[0] = 0.029; varThr[1] = 0.05;
+  varThr[2] = 0.105; varThr[3] = 0.095;
+  varThr[4] = 0.008; varThr[5] = 2.5;
+  varThr[6] = 1.5  ; varThr[7] = 0.006;
+  varThr[8] = 0.015; varThr[9] = 0.06;
+  }
+
+  else {
+  varThr[0] = 999.; varThr[1] = 999.;
+  varThr[2] = 999.; varThr[3] = 999.;
+  varThr[4] = 999.; varThr[5] = 999.;
+  varThr[6] = 999.; varThr[7] = 999.;
+  varThr[8] = 999.; varThr[9] = 999.;
+  }
+
+  for (Int_t aa = 0; aa < 10; aa++)
+    candOk = candOk and (varVal[aa] < varThr[aa]);
 
   return candOk;
 
 }
-*/
+
 // Too many dumb lines for styling... doing it here
 void styleHist(TH1F* varHist, Int_t useCol, Int_t filSty, Int_t marSty, Int_t marSiz, Float_t linWid) {
 
@@ -181,25 +139,37 @@ void tnpIso() {
    setTDRStyle();
 
    // Everything to tinker with should be here
-   Double_t yMin = .761, yMax = 1.049;
+   Double_t yMin = .921, yMax = 1.004;
 
-   string varName[5];
-   varName[0] = "dph";
+   string varName[6], outPre;
+   varName[0] = "lol";
+   outPre = "lol_";
 
-   Double_t cut_b = 0.02, cut_e = 0.02;
-
-   // -------------------------------------------------- //
-
-   string hisLeg = "MC", pntLeg = "Data";
-
-   const Int_t nBin = 10;
-   Float_t vtxBins[nBin + 1] = {0., 2., 4., 6., 8., 10., 13., 17., 21., 25., 40.};
+   Double_t cut_b = 0.015, cut_e = 0.015;
 
    // -------------------------------------------------- //
 
-   varName[2] = "nVtx";
+   string hisLeg = "huh", pntLeg = "wut";
+
+   // For nVtx
+   //const Int_t nBin = 5; // 8
+   //Float_t graBins[nBin + 1] = {0., 3., 6., 9., 13., 17., 21., 25., 35.};
+   //Float_t graBins[nBin + 1] = {0.5, 6.5, 10.5, 14.5, 18.5, 22.5, 28.5, 42.5, 60.5};
+   //Float_t graBins[nBin + 1] = {0.5, 10.5, 20.5, 30.5, 40.5, 50.5};
+
+   // For eta
+   //const Int_t nBin = 13;
+   //Float_t graBins[nBin + 1] = {-2.1, -1.56, -1.44, -1.0, -0.6, -0.3, -0.1, 0.1, 0.3, 0.6, 1.0, 1.44, 1.56, 2.1};
+
+   const Int_t nBin = 1;
+   Float_t graBins[nBin + 1] = {-0.5, 999.5};
+
+   // -------------------------------------------------- //
+
+   varName[2] = "yeah";
    varName[3] = "Efficiency";
    varName[4] = pntLeg + " / " + hisLeg;
+   varName[5] = "ok";
 
    if (varName[0] == "sie")
      varName[1] = "Cluster Shape";
@@ -207,10 +177,10 @@ void tnpIso() {
    if (varName[0] == "hoe")
      varName[1] = "Hadronic / EM";
 
-   if (varName[0] == "ecu" or varName[0] == "ecc")
+   if (varName[0] == "ecc")
      varName[1] = "Relative EcalIso";
 
-   if (varName[0] == "hcu" or varName[0] == "hcc")
+   if (varName[0] == "hcc")
      varName[1] = "Relative HcalIso";
 
    if (varName[0] == "eop")
@@ -219,11 +189,11 @@ void tnpIso() {
    if (varName[0] == "mih")
      varName[1] = "Missing Tracker Hits";
 
-   if (varName[0] == "det" or varName[0] == "des")
-     varName[1] = "Track - Supercluster #Delta#eta";
+   if (varName[0] == "des")
+     varName[1] = "Track - Seed Cluster #Delta#eta";
 
    if (varName[0] == "dph")
-     varName[1] = "Track - Supercluster #Delta#phi";
+     varName[1] = "Track - SC #Delta#phi";
 
    if (varName[0] == "chi")
      varName[1] = "Track Fit #chi^{2}";
@@ -231,29 +201,33 @@ void tnpIso() {
    if (varName[0] == "tki")
      varName[1] = "Relative TrkIso";
 
+   if (varName[0] == "lol")
+     varName[1] = "Test";
+
    // -------------------------------------------------- //
 
    TH1::SetDefaultSumw2(true);
 
-   TH1F* vtx_t1b = new TH1F("vtx_t1b", "", nBin, vtxBins);
-   TH1F* vtx_t1e = new TH1F("vtx_t1e", "", nBin, vtxBins);
+   TH1F* gra_t1b = new TH1F("gra_t1b", "", nBin, graBins);
+   TH1F* gra_t1e = new TH1F("gra_t1e", "", nBin, graBins);
 
-   TH1F* vtx_t2b = new TH1F("vtx_t2b", "", nBin, vtxBins);
-   TH1F* vtx_t2e = new TH1F("vtx_t2e", "", nBin, vtxBins);
+   TH1F* gra_t2b = new TH1F("gra_t2b", "", nBin, graBins);
+   TH1F* gra_t2e = new TH1F("gra_t2e", "", nBin, graBins);
 
-   TH1F* vtx_p1b = new TH1F("vtx_p1b", "", nBin, vtxBins);
-   TH1F* vtx_p1e = new TH1F("vtx_p1e", "", nBin, vtxBins);
+   TH1F* gra_p1b = new TH1F("gra_p1b", "", nBin, graBins);
+   TH1F* gra_p1e = new TH1F("gra_p1e", "", nBin, graBins);
 
-   TH1F* vtx_p2b = new TH1F("vtx_p2b", "", nBin, vtxBins);
-   TH1F* vtx_p2e = new TH1F("vtx_p2e", "", nBin, vtxBins);
+   TH1F* gra_p2b = new TH1F("gra_p2b", "", nBin, graBins);
+   TH1F* gra_p2e = new TH1F("gra_p2e", "", nBin, graBins);
 
    // -------------------------------------------------- //
 
-   string const inDir = "/home/ieeya/Downloads/HLT_Val/dev/e_74x/file/v15p1/";
+   string const inDir = "/home/afiqaize/Downloads/HLT_Val/dev/e_80x/file/v11/retune_Jun15/";
 
    TChain *t1 = new TChain("eleDistr");
-   t1->Add((inDir + "skim_p1dat_*.root").c_str());
-   t1->Add((inDir + "skim_m1mcStd_m2mcHFFlat_asympDR.root").c_str());
+   t1->Add((inDir + "skim_m1z1ll.root").c_str());
+
+   Bool_t isMC = false;
 
    Int_t type;
    t1->SetBranchAddress("itype", &type);
@@ -261,11 +235,15 @@ void tnpIso() {
    t1->SetBranchAddress("weight", &weight);
    Float_t puWgt;
    t1->SetBranchAddress("puWgt", &puWgt);
-   Int_t nvtx;
-   t1->SetBranchAddress("nvtx", &nvtx);
+   Int_t nVtx;
+   t1->SetBranchAddress("nVtx", &nVtx);
+   Float_t rho;
+   t1->SetBranchAddress("rho", &rho);
 
    Int_t pass[10];
-   t1->SetBranchAddress("pass_hlt", pass);
+   t1->SetBranchAddress("passHLT", pass);
+   Int_t genMatch[10];
+   t1->SetBranchAddress("genMatch", genMatch);
    Int_t n;
    t1->SetBranchAddress("hlt_n", &n);
    Float_t et[10];
@@ -288,10 +266,14 @@ void tnpIso() {
    t1->SetBranchAddress("hlt_eca", eca);
    Float_t ecc[10];
    t1->SetBranchAddress("hlt_ecc", ecc);
+   Float_t ecu[10];
+   t1->SetBranchAddress("hlt_ecu", ecu);
    Float_t hca[10];
    t1->SetBranchAddress("hlt_hca", hca);
    Float_t hcc[10];
    t1->SetBranchAddress("hlt_hcc", hcc);
+   Float_t hcu[10];
+   t1->SetBranchAddress("hlt_hcu", hcu);
    Float_t eop[10];
    t1->SetBranchAddress("hlt_eop", eop);
    Float_t chi[10];
@@ -307,10 +289,117 @@ void tnpIso() {
    Float_t tki[10];
    t1->SetBranchAddress("hlt_tki", tki);
 
+   Int_t nBX, nPUtrue, gp_n;
+   Int_t BX[100], nPUobs[100];
+   Float_t genWgt, gp_pt[10], gp_eta[10], gp_phi[10];
+
+    if (isMC) {
+
+    t1->SetBranchAddress("genWgt", &genWgt);
+    t1->SetBranchAddress("gp_n", &gp_n);
+    t1->SetBranchAddress("gp_pt", gp_pt);
+    t1->SetBranchAddress("gp_eta", gp_eta);
+    t1->SetBranchAddress("gpphi", gp_phi);
+    t1->SetBranchAddress("nBX", &nBX);
+    t1->SetBranchAddress("BX", BX);
+    t1->SetBranchAddress("nPUtrue", &nPUtrue);
+    t1->SetBranchAddress("nPUobs", nPUobs);
+
+    }
+
    // -------------------------------------------------- //
+   // The TnP version of efficiency checker
 
    TLorentzVector p4Tag, p4Probe;
-   Float_t finWgt = 1., var = 9999.;
+   Float_t finWgt = 1.;
+   Float_t graY1 = 9999., graY2 = 9999.;
+   Float_t graX = 9999.;
+
+   Int_t nEvt1 = t1->GetEntries();
+   cout << "nEvt1 = " << nEvt1 << endl;
+
+   for (Int_t evt1 = 0; evt1 < nEvt1; evt1++) {
+
+     t1->GetEntry(evt1);
+     finWgt = puWgt * weight;
+     if (n < 2) continue;
+
+     for (Int_t iTag = 0; iTag < n; iTag++) {
+
+       if (pass[iTag] != 1) continue;
+       if ((et[iTag] < 25.) or (fabs(eta[iTag]) > 2.5)) continue;
+
+       p4Tag.SetPtEtaPhiE(et[iTag], eta[iTag], phi[iTag], e[iTag]);
+
+       for (Int_t iProbe = 0; iProbe < n; iProbe++) {
+
+         if (iProbe == iTag) continue;
+         if ((et[iProbe] < 25.) or (fabs(eta[iProbe]) > 2.5)) continue;
+
+         p4Probe.SetPtEtaPhiE(et[iProbe], eta[iProbe], phi[iProbe], e[iProbe]);
+
+         if ((p4Tag + p4Probe).M() < 70. or (p4Tag + p4Probe).M() > 110.) continue;
+
+         if (!checkCand("WPTight", eta[iProbe],
+                        sie[iProbe], hoe[iProbe], ecc[iProbe], hcc[iProbe], eop[iProbe],
+                        chi[iProbe], mih[iProbe], des[iProbe], dph[iProbe], tki[iProbe])) continue;
+
+         // FILL IN THE FILTER TO BE LOOKED AT HERE
+         graY1 = dph[iProbe];
+         graY2 = dph[iProbe];
+         graX = et[iProbe];
+
+         if (type == -1) {
+
+           if (fabs(eta[iProbe]) < 1.444) {
+
+             gra_t1b->Fill(graX, finWgt);
+
+             if (graY1 < cut_b)
+               gra_p1b->Fill(graX, finWgt);
+ 
+           }
+
+           if (fabs(eta[iProbe]) >= 1.566) {
+
+             gra_t1e->Fill(graX, finWgt);
+
+             if (graY1 < cut_e)
+               gra_p1e->Fill(graX, finWgt);
+
+           }
+         }
+
+         if (type == 99) {
+
+           if (fabs(eta[iProbe]) < 1.444) {
+           //if (true) {
+
+             gra_t2b->Fill(graX, finWgt);
+
+             if (graY2 < cut_b)
+               gra_p2b->Fill(graX, finWgt);
+
+           }
+
+           if (fabs(eta[iProbe]) >= 1.566) {
+
+             gra_t2e->Fill(graX, finWgt);
+
+             if (graY2 < cut_e)
+               gra_p2e->Fill(graX, finWgt);
+
+           }
+         }
+       }
+     }
+   }
+
+   // -------------------------------------------------- //
+   /*/ The all-cand version of efficiency checker
+
+   TLorentzVector p4Cand;
+   Float_t finWgt = 1., graY = 9999., graX = 9999.;
 
    Int_t nEvt1 = t1->GetEntries();
    cout << "nEvt1 = " << nEvt1 << endl;
@@ -320,103 +409,58 @@ void tnpIso() {
      t1->GetEntry(evt1);
      finWgt = puWgt * weight;
 
-     for (Int_t iTag = 0; iTag < n; iTag++) {
+     for (Int_t iCand = 0; iCand < n; iCand++) {
 
-       if (pass[iTag] != 1) continue;
-       if ((et[iTag] < 25.) or (eta[iTag] > 2.5)) continue;
+       if (et[iCand] < 15.) continue;
 
-       p4Tag.SetPtEtaPhiE(et[iTag], eta[iTag], phi[iTag], e[iTag]);
+       if (!checkCand("", eta[iProbe],
+                      sie[iProbe], hoe[iProbe], ecc[iProbe], hcc[iProbe], eop[iProbe],
+                      chi[iProbe], mih[iProbe], des[iProbe], dph[iProbe], tki[iProbe])) continue;
 
-       for (Int_t iProbe = 0; iProbe < n; iProbe++) {
+       // FILL IN THE FILTER TO BE LOOKED AT HERE
+       graY = sie[iCand];
+       graX = (Float_t) nVtx;
 
-         if (iProbe == iTag) continue;
-         if (et[iProbe] < 15.) continue;
+       if (fabs(eta[iCand]) < 1.4791) {
 
-         p4Probe.SetPtEtaPhiE(et[iProbe], eta[iProbe], phi[iProbe], e[iProbe]);
+         gra_t1b->Fill(graX, finWgt);
 
-         if ((p4Tag + p4Probe).M() < 70. or (p4Tag + p4Probe).M() > 110.) continue;
+         if (graY < cut_b)
+           gra_p1b->Fill(graX, finWgt);
 
-         // FILL IN THE FILTER TO BE LOOKED AT HERE
-         var = dph[iProbe];
+       }
 
-         if (type == 1) {
+       if (fabs(eta[iCand]) >= 1.4791) {
 
-           if (fabs(eta[iProbe]) < 1.4791) {
+         gra_t1e->Fill(graX, finWgt);
 
-             if(!barPass(sie[iProbe], hoe[iProbe], ecc[iProbe], hcc[iProbe], eop[iProbe],
-                         chi[iProbe], mih[iProbe], det[iProbe], dph[iProbe], tki[iProbe])) continue;
+         if (graY < cut_e)
+           gra_p1e->Fill(graX, finWgt);
 
-             vtx_t1b->Fill((Float_t) nvtx, finWgt);
-
-             if (var < cut_b)
-               vtx_p1b->Fill((Float_t) nvtx, finWgt);
- 
-           }
-
-           if (fabs(eta[iProbe]) >= 1.4791) {
-
-             if(!endPass(sie[iProbe], hoe[iProbe], ecc[iProbe], hcc[iProbe], eop[iProbe],
-                         chi[iProbe], mih[iProbe], det[iProbe], dph[iProbe], tki[iProbe])) continue;
-
-             vtx_t1e->Fill((Float_t) nvtx, finWgt);
-
-             if (var < cut_e)
-               vtx_p1e->Fill((Float_t) nvtx, finWgt);
-
-           }
-         }
-
-         if (type == -2) {
-
-           if (fabs(eta[iProbe]) < 1.4791) {
-
-             if(!barPass(sie[iProbe], hoe[iProbe], ecc[iProbe], hcc[iProbe], eop[iProbe],
-                         chi[iProbe], mih[iProbe], det[iProbe], dph[iProbe], tki[iProbe])) continue;
-
-             vtx_t2b->Fill((Float_t) nvtx, finWgt);
-
-             if (var < cut_b)
-               vtx_p2b->Fill((Float_t) nvtx, finWgt);
-
-
-           }
-
-           if (fabs(eta[iProbe]) >= 1.4791) {
-
-             if(!endPass(sie[iProbe], hoe[iProbe], ecc[iProbe], hcc[iProbe], eop[iProbe],
-                         chi[iProbe], mih[iProbe], det[iProbe], dph[iProbe], tki[iProbe])) continue;
-
-             vtx_t2e->Fill((Float_t) nvtx, finWgt);
-
-             if (var < cut_e)
-               vtx_p2e->Fill((Float_t) nvtx, finWgt);
-
-           }
-         }
        }
      }
    }
 
-   // -------------------------------------------------- //
+   // -------------------------------------------------- /*/
 
-   TGraphAsymmErrors *eff_g1b = new TGraphAsymmErrors(vtx_p1b, vtx_t1b);
-   TGraphAsymmErrors *eff_g1e = new TGraphAsymmErrors(vtx_p1e, vtx_t1e);
+   TGraphAsymmErrors *eff_g1b = new TGraphAsymmErrors(gra_p1b, gra_t1b, "n");
+   TGraphAsymmErrors *eff_g1e = new TGraphAsymmErrors(gra_p1e, gra_t1e, "n");
    styleGr(eff_g1b, kRed + 1, 0, 20, 1, 2.0);
    styleGr(eff_g1e, kRed + 1, 0, 20, 1, 2.0);
 
-   TGraphAsymmErrors *eff_g2b = new TGraphAsymmErrors(vtx_p2b, vtx_t2b);
-   TGraphAsymmErrors *eff_g2e = new TGraphAsymmErrors(vtx_p2e, vtx_t2e);
+   TGraphAsymmErrors *eff_g2b = new TGraphAsymmErrors(gra_p2b, gra_t2b, "n");
+   TGraphAsymmErrors *eff_g2e = new TGraphAsymmErrors(gra_p2e, gra_t2e, "n");
    styleGr(eff_g2b, kAzure + 1, 0, 2, 1, 2.0);
    styleGr(eff_g2e, kAzure + 1, 0, 2, 1, 2.0);
 
-   TH1F* frameHist = new TH1F("frameHist", (varName[1] + " Efficiency vs nVtx").c_str(), nBin, vtxBins);
+   TH1F* frameHist = new TH1F("frameHist", (varName[1] + " Efficiency vs " + varName[5]).c_str(), nBin, graBins);
    axHist(frameHist, yMin, yMax, varName[3], 0.027, 1.05, 0.025, varName[2], 0.027, 1.15, 0.025);
 
-   TH1F* eff_h1b = new TH1F("", "", nBin, vtxBins);
-   TH1F* eff_h1e = new TH1F("", "", nBin, vtxBins);
+   TH1F* eff_h1b = new TH1F("", "", nBin, graBins);
+   TH1F* eff_h1e = new TH1F("", "", nBin, graBins);
 
-   TH1F* eff_h2b = new TH1F("", "", nBin, vtxBins);
-   TH1F* eff_h2e = new TH1F("", "", nBin, vtxBins);
+   TH1F* eff_h2b = new TH1F("", "", nBin, graBins);
+   TH1F* eff_h2e = new TH1F("", "", nBin, graBins);
 
    Float_t l1[nBin + 1];
 
@@ -451,22 +495,34 @@ void tnpIso() {
 
    l1[nBin] = 1.;
 
+   //cout << "EB Pas: "  << gra_p1b->GetBinContent(1) << " \\pm " << gra_p1b->GetBinError(1) << endl;
+   //cout << "EB Tot: "  << gra_t1b->GetBinContent(1) << " \\pm " << gra_t1b->GetBinError(1) << endl;
+   cout << std::setprecision(4) << "EB 1 Eff: " << eff_h1b->GetBinContent(1) << " \\pm " << eff_h1b->GetBinError(1) << ", cut " << cut_b << endl;
+   cout << std::setprecision(4) << "EB 2 Eff: " << eff_h2b->GetBinContent(1) << " \\pm " << eff_h2b->GetBinError(1) << ", cut " << cut_b << endl;
+
+   //cout << endl;
+
+   //cout << "EE Pas: "  << gra_p1e->GetBinContent(1) << " \\pm " << gra_p1e->GetBinError(1) << endl;
+   //cout << "EE Tot: "  << gra_t1e->GetBinContent(1) << " \\pm " << gra_t1e->GetBinError(1) << endl;
+   cout << std::setprecision(5) << "EE 1 Eff: " << eff_h1e->GetBinContent(1) << " $\\pm$ " << eff_h1e->GetBinError(1) << ", cut " << cut_e << endl;
+   cout << std::setprecision(5) << "EE 2 Eff: " << eff_h2e->GetBinContent(1) << " $\\pm$ " << eff_h2e->GetBinError(1) << ", cut " << cut_e << endl;
+
    // -------------------------------------------------- //
 
-   TGraph *lineb = new TGraph(nBin + 1, vtxBins, l1);
+   TGraph *lineb = new TGraph(nBin + 1, graBins, l1);
    lineb->SetLineColor(kYellow + 1);
    lineb->SetLineWidth(2);
 
-   TGraph *linee = new TGraph(nBin + 1, vtxBins, l1);
+   TGraph *linee = new TGraph(nBin + 1, graBins, l1);
    linee->SetLineColor(kYellow + 1);
    linee->SetLineWidth(2);
 
-   TH1F* sfb = new TH1F("", "", nBin, vtxBins);
+   TH1F* sfb = new TH1F("", "", nBin, graBins);
    sfb->Divide(eff_h1b, eff_h2b, 1., 1., "B");
    styleHist(sfb, kBlack, 0, 2, 1, 1.0);
    axHist(sfb, 0.801, 1.199, varName[4], 0.061, 0.49, 0.059, varName[2], 0.061, 1.15, 0.059);
 
-   TH1F* sfe = new TH1F("", "", nBin, vtxBins);
+   TH1F* sfe = new TH1F("", "", nBin, graBins);
    sfe->Divide(eff_h1e, eff_h2e, 1., 1., "B");
    styleHist(sfe, kBlack, 0, 2, 1, 1.0);
    axHist(sfe, 0.801, 1.199, varName[4], 0.061, 0.49, 0.059, varName[2], 0.061, 1.15, 0.059);
@@ -474,9 +530,12 @@ void tnpIso() {
    TLatex txt;
    txt.SetTextSize(0.035);
    txt.SetTextAlign(13);
+   string topLeft, topRight;
+   topLeft = "#bf{CMS} #it{Preliminary}";
+   topRight = "0.8 fb^{-1} (13 TeV)";
 
    TLegend *leg01 = new TLegend(.81, .05, .95, .23);
-   leg01->SetHeader("#left|#eta^{e}#right| < 1.479");
+   leg01->SetHeader("#left|#eta^{e}#right| < 1.444");
    leg01->AddEntry(eff_g2b, (hisLeg).c_str(), "lp");
    leg01->AddEntry(eff_g1b, (pntLeg).c_str(), "lp");
    leg01->SetFillColor(0);
@@ -485,7 +544,7 @@ void tnpIso() {
    leg01->SetTextFont(42);
 
    TLegend *leg02 = new TLegend(.81, .05, .95, .23);
-   leg02->SetHeader("#left|#eta^{e}#right| > 1.479");
+   leg02->SetHeader("#left|#eta^{e}#right| > 1.566");
    leg02->AddEntry(eff_g2e, (hisLeg).c_str(), "lp");
    leg02->AddEntry(eff_g1e, (pntLeg).c_str(), "lp");
    leg02->SetFillColor(0);
@@ -495,7 +554,7 @@ void tnpIso() {
 
    // -------------------------------------------------- //
 
-   string const outDir = inDir + "plot_effVtx/";
+   string const outDir = inDir + "";
 
    TCanvas *c01 = new TCanvas("c01", "c01", 200, 10, 1000, 1000);
    TCanvas *c02 = new TCanvas("c02", "c02", 200, 10, 1000, 1000);
@@ -516,8 +575,8 @@ void tnpIso() {
    lineb->Draw("lsame");
 
    leg01->Draw();
-   txt.DrawLatexNDC(0.06, 0.928, "#bf{CMS} #it{Preliminary}");
-   txt.DrawLatexNDC(0.783, 0.933, "2.081 fb^{-1} (13 TeV)");
+   //txt.DrawLatexNDC(0.06, 0.928, topLeft.c_str());
+   //txt.DrawLatexNDC(0.783, 0.933, topRight.c_str());
 
    c01->cd();
    TPad *pad2 = new TPad("pad2", "pad2", 0., 0., 1., 0.29);
@@ -531,7 +590,7 @@ void tnpIso() {
    sfb->Draw("same");
 
    c01->cd();
-   c01->SaveAs((outDir + "eff_" + varName[0] + "_bar.pdf").c_str());
+   c01->SaveAs((outDir + outPre + varName[0] + "_eb.pdf").c_str());
 
    c02->cd();
 
@@ -549,8 +608,8 @@ void tnpIso() {
    linee->Draw("lsame");
 
    leg02->Draw();
-   txt.DrawLatexNDC(0.06, 0.928, "#bf{CMS} #it{Preliminary}");
-   txt.DrawLatexNDC(0.783, 0.933, "2.081 fb^{-1} (13 TeV)");
+   //txt.DrawLatexNDC(0.06, 0.928, topLeft.c_str());
+   //txt.DrawLatexNDC(0.783, 0.933, topRight.c_str());
 
    c02->cd();
    TPad *pad4 = new TPad("pad4", "pad4", 0., 0., 1., 0.29);
@@ -564,7 +623,7 @@ void tnpIso() {
    sfe->Draw("same");
 
    c02->cd();
-   c02->SaveAs((outDir + "eff_" + varName[0] + "_end.pdf").c_str());
+   //c02->SaveAs((outDir + outPre + varName[0] + "_ee.pdf").c_str());
 
    // -------------------------------------------------- //
 
@@ -574,10 +633,8 @@ void tnpIso() {
 }
 
 int main() {
-
   tnpIso();
   return 0;
-
 }
 
 

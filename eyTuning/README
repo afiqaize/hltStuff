@@ -1,6 +1,6 @@
 Electron WP Optimization Steps
 
-NOTE: Somewhat outdated
+NOTE: Extremely outdated, but who else uses these anyway
 
 1- Skim the dataset of interest with a loose point e.g. HLT_Ele27_eta2p1_Cut1p0_Gsf_v1 of wp75_v16_nTuple.py
 2- Use Matteo's code hltcode/HLTTest [1] to make the flat tuples

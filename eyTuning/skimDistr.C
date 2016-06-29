@@ -1,128 +1,107 @@
 // Updated version of makeDistr.C that performs some initial skimming
-// Jan 14: Added accPath cut to reject failing events and bugfixes
+// Jan 14 2016: Added accPath cut to reject failing events and bugfixes
 // Usage: root -l skimDistr.C
+// Jun 13 2016: updated the WP methods to 2016 pre-ichep
 
 #include "TFile.h"
 #include "TTree.h"
 #include "TMath.h"
 #include "TROOT.h"
 
-Bool_t barWPLoose(Float_t sie_cut_b, Float_t hoe_cut_b, Float_t ecc_cut_b, Float_t hcc_cut_b, 
-                  Float_t eop_cut_b, Float_t chi_cut_b, Float_t mih_cut_b, 
-                  Float_t det_cut_b, Float_t dph_cut_b, Float_t tki_cut_b) {
+Bool_t checkCand(const string setWP, const Float_t eta,
+                 const Float_t sie, const Float_t hoe, const Float_t ecc, const Float_t hcc, 
+                 const Float_t eop, const Float_t chi, const Float_t mih, 
+                 const Float_t des, const Float_t dph, const Float_t tki) {
 
-  Bool_t barOk = false;
+  Bool_t candOk = true;
+  Float_t varVal[10], varThr[10];
 
-  // All barrel cuts
+  // Order as in the method call -> HLT filtering
+  varVal[0] = sie; varVal[1] = hoe;
+  varVal[2] = ecc; varVal[3] = hcc;
+  varVal[4] = eop; varVal[5] = chi;
+  varVal[6] = mih; varVal[7] = des;
+  varVal[8] = dph; varVal[9] = tki;
 
-  if (sie_cut_b <= 0.011) {
-    if (hoe_cut_b <= 0.06) {
-      if (ecc_cut_b <= 0.15) {
-        if (hcc_cut_b <= 0.15) {
-          if (eop_cut_b <= 0.012) {
-            if (dph_cut_b <= .02) {
-              if (det_cut_b <= .004) {
-                if (tki_cut_b <= 0.08) {
-                  if (mih_cut_b <= 99.) { // careful at these not 1.0 cuts
-                    if (chi_cut_b <= 99.)
-                      barOk = true;
-
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
+  if (fabs(eta) < 1.4791 && setWP == "WPLoose") {
+  varThr[0] = 0.011; varThr[1] = 0.06;
+  varThr[2] = 0.145; varThr[3] = 0.15;
+  varThr[4] = 0.012; varThr[5] = 99.0;
+  varThr[6] = 99.0 ; varThr[7] = 0.004;
+  varThr[8] = 0.02 ; varThr[9] = 0.08;
   }
 
-  return barOk;
-
-}
-
-Bool_t endWPLoose(Float_t sie_cut_e, Float_t hoe_cut_e, Float_t ecc_cut_e, Float_t hcc_cut_e, 
-                  Float_t eop_cut_e, Float_t chi_cut_e, Float_t mih_cut_e,
-                  Float_t det_cut_e, Float_t dph_cut_e, Float_t tki_cut_e) {
-
-  Bool_t endOk = false;
-
-  // All endcap cuts
-
-  if (sie_cut_e <= 0.032) {
-    if (hoe_cut_e <= 0.065) {
-      if (ecc_cut_e <= 0.15) {
-        if (hcc_cut_e <= 0.16) {
-          if (eop_cut_e <= 0.01) {
-            if (dph_cut_e <= 99.) {
-              if (det_cut_e <= 99.) {
-                if (tki_cut_e <= 0.08) {
-                  if (mih_cut_e <= 2.5) { // careful at these not 1.0 cuts
-                    if (chi_cut_e <= 2.8)
-                      endOk = true;
-
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
+  else if (fabs(eta) > 1.4791 && setWP == "WPLoose") {
+  varThr[0] = 0.032; varThr[1] = 0.065;
+  varThr[2] = 0.135; varThr[3] = 0.13;
+  varThr[4] = 0.01 ; varThr[5] = 2.8;
+  varThr[6] = 2.5  ; varThr[7] = 0.007;
+  varThr[8] = 0.02 ; varThr[9] = 0.08;
   }
 
-  return endOk;
-
-}
-
-Bool_t notFake(Float_t sie_cut, Float_t hoe_cut, Float_t ecc_cut, Float_t hcc_cut, 
-               Float_t eop_cut, Float_t chi_cut, Float_t mih_cut, 
-               Float_t det_cut, Float_t dph_cut, Float_t tki_cut) {
-
-  Bool_t candOk = false;
-
-  if (sie_cut <= 99.) {
-    if (hoe_cut <= 99.) {
-      if (ecc_cut <= 99.) {
-        if (hcc_cut <= 99.) {
-          if (eop_cut <= 99.) {
-            if (dph_cut <= 99.) {
-              if (det_cut <= 99.) {
-                if (tki_cut <= 99.) {
-                  if (mih_cut <= 99.) {
-                    if (chi_cut <= 99.)
-                      candOk = true;
-
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
+  else if (fabs(eta) < 1.4791 && setWP == "WPTight") {
+  varThr[0] = 0.011; varThr[1] = 0.05;
+  varThr[2] = 0.145; varThr[3] = 0.13;
+  varThr[4] = 0.01 ; varThr[5] = 99.0;
+  varThr[6] = 99.0 ; varThr[7] = 0.0035;
+  varThr[8] = 0.015; varThr[9] = 0.06;
   }
+
+  else if (fabs(eta) > 1.4791 && setWP == "WPTight") {
+  varThr[0] = 0.029; varThr[1] = 0.05;
+  varThr[2] = 0.105; varThr[3] = 0.095;
+  varThr[4] = 0.008; varThr[5] = 2.5;
+  varThr[6] = 1.5  ; varThr[7] = 0.006;
+  varThr[8] = 0.015; varThr[9] = 0.06;
+  }
+
+  else {
+  varThr[0] = 999.; varThr[1] = 999.;
+  varThr[2] = 999.; varThr[3] = 999.;
+  varThr[4] = 999.; varThr[5] = 999.;
+  varThr[6] = 999.; varThr[7] = 999.;
+  varThr[8] = 999.; varThr[9] = 999.;
+  }
+
+  for (Int_t aa = 0; aa < 10; aa++)
+    candOk = candOk and (varVal[aa] < varThr[aa]);
 
   return candOk;
+
+}
+
+Float_t deltaPhi(const Float_t phi1, const Float_t phi2) {
+
+  Float_t dp = TMath::ACos( TMath::Cos(phi1 - phi2) );
+  return dp;
+
+}
+
+Float_t deltaR(const Float_t eta1, const Float_t phi1, const Float_t eta2, const Float_t phi2) {
+
+  return TMath::Sqrt( TMath::Sq(eta1 - eta2) + TMath::Sq(deltaPhi(phi1, phi2)) );
 
 }
  
 void skimDistr() {
 
-  const string inDir = "/home/ieeya/Downloads/HLT_Val/dev/e_80x/file/v0p4/";
-  const string outputFile = "dyll_m3Full.root";
+  //const string inDir = "/home/afiqaize/Downloads/HLT_Val/dev/e_80x/conf/v11/eeAngEff_Jun13/";
+  const string inDir = "/afs/cern.ch/work/a/afiqaize/egm/eeAngEff_Jun13/CMSSW_8_0_11/src/HLTTest/MyCandidates/ntup/";
+  const string outputFile = "skim_m1z1ll.root";
 
   Bool_t hasReco = false;
+  Bool_t isMC = true;
 
   TFile* outFile = new TFile((inDir + outputFile).c_str(), "recreate");
   TTree* outTree = new TTree("eleDistr", "eleDistr");
   outTree->SetAutoSave(500000000);
 
-  Int_t cand, npf, hlt_n, reco_n, nVtx, nRun, nEvt, nLumi, accPath, itype; 
-  Int_t pass[10], mishitspf[10], reco_mishits[10];
-  Float_t rho, puWgt, weight, epf[10], eRawpf[10], etpf[10], etRawpf[10], etapf[10], phipf[10];
+  Int_t cand, npf, hlt_n, reco_n, gp_n, nVtx, nBX, nPUtrue, nRun, nEvt, nLumi, accPath, itype; 
+  Int_t passHLT[10], genMatch[10], BX[100], nPUobs[100], mishitspf[10], reco_mishits[10];
+  Float_t rho, puWgt, genWgt, weight, epf[10], eRawpf[10], etpf[10], etRawpf[10], etapf[10], phipf[10];
   Float_t sieiepf[10], dphipf[10], detapf[10], detaseedpf[10], hoepf[10];
   Float_t ecalpf[10], hcalpf[10], tkisopf[10], eoppf[10], chi2pf[10];
+  Float_t gp_pt[10], gp_eta[10], gp_phi[10];
   Float_t reco_e[10], reco_et[10], reco_eRaw[10], reco_etRaw[10], reco_pt[10], reco_eta[10], reco_phi[10];
   Float_t reco_sieie[10], reco_hoe[10], reco_ecal[10], reco_dphi[10], reco_deta[10], reco_detaseed[10];
   Float_t reco_hcal[10], reco_tkiso[10], reco_eop[10], reco_chi2[10];
@@ -163,9 +142,24 @@ void skimDistr() {
   outTree->Branch("hlt_eop"  , hlt_eop, "hlt_eop[hlt_n]/F");
   outTree->Branch("hlt_chi" , hlt_chi, "hlt_chi[hlt_n]/F");
   outTree->Branch("hlt_mih" , hlt_mih, "hlt_mih[hlt_n]/F");
-  outTree->Branch("pass_hlt" , pass, "pass_hlt[hlt_n]/I");
+  outTree->Branch("passHLT" , passHLT, "passHLT[hlt_n]/I");
+  outTree->Branch("genMatch", &genMatch, "genMatch[hlt_n]/I");
   outTree->Branch("itype"  , &itype, "itype/I");
   outTree->Branch("weight" , &weight, "weight/F");
+
+  if (isMC) {
+
+    outTree->Branch("genWgt", &genWgt, "genWgt/F");
+    outTree->Branch("gp_n", &gp_n, "gp_n/I");
+    outTree->Branch("gp_pt", gp_pt, "gp_pt[gp_n]/F");
+    outTree->Branch("gp_eta", gp_eta, "gp_eta[gp_n]/F");
+    outTree->Branch("gp_phi", gp_phi, "gp_phi[gp_n]/F");
+    outTree->Branch("nBX", &nBX, "nBX/I");
+    outTree->Branch("BX", BX, "BX[nBX]/I");
+    outTree->Branch("nPUtrue", &nPUtrue, "nPUtrue/I");
+    outTree->Branch("nPUobs", nPUobs, "nPUobs[nBX]/I");
+
+  }
 
   if (hasReco) {
 
@@ -194,27 +188,18 @@ void skimDistr() {
   }
   
   // MC vs data: weight = xsec_mc * intLumi_dat / nEvt_mc
-  //const int proc = 2;
-  //const int type[proc] = {3, 3};
-  //const float weights[proc] = {1., 1.};
-  //const char* names[proc] = {"dat_full_8.root", "dat_full_9.root"};
-  //const int type[proc] = {3, 3, 3, 3, 3, 3, 3, 3, 3, 3};
-  //const float weights[proc] = {1., 1., 1., 1., 1., 1., 1., 1., 1., 1.};
-  //const char* names[proc] = {"dat_full_0.root", "dat_full_1.root", "dat_full_2.root", "dat_full_3.root", "dat_full_4.root", "dat_full_5.root", "dat_full_6.root", "dat_full_7.root", "dat_full_8.root", "dat_full_9.root"};
-
-  const Int_t proc = 1;
-  const Int_t type[proc] = {-3};
-  const Float_t weights[proc] = {2.576871};
-  const char* names[proc] = {"dyll_wFull.root"};
-
-  //const int proc = 1;
-  //const int type[proc] = {1};
-  //const float weights[proc] = {1.};
-  //const char* names[proc] = {"reco_pts2c1.root"};
+  const int proc = 2;
+  const int type[proc] = {-1, -1};
+  const float weights[proc] = {1., 1.};
+  const char* names[proc] = {"z1ll-0", "z1ll-1"};
+  //const int proc = 9;
+  //const int type[proc] = {-2, -2, -2, -2, -2, -2, -2, -2, -2};
+  //const float weights[proc] = {13.044494632, 1., 1., 0.138052392, 0.138052392, 0.080386239, 0.080386239, 0.06825985, 0.065750272};
+  //const char* names[proc] = {"qcd15", "qcd30-0", "qcd30-1", "qcd50-0", "qcd50-1", "qcd80-0", "qcd80-1", "qcd120", "qcd170"};
     
   for (Int_t nfiles = 0; nfiles < proc; nfiles++) {
   
-    TFile* file = TFile::Open((inDir + names[nfiles]).c_str());
+    TFile* file = TFile::Open((inDir + names[nfiles] + ".root").c_str());
     TTree* inTree = (TTree*)file->Get("tree");
 
     inTree->SetBranchStatus("*"          , 0);
@@ -225,7 +210,7 @@ void skimDistr() {
     inTree->SetBranchStatus("npf"        , 1);
     inTree->SetBranchStatus("nVtx"       , 1);
     inTree->SetBranchStatus("rho"        , 1);
-    inTree->SetBranchStatus("puWgt"      , 1);
+    //inTree->SetBranchStatus("puWgt"      , 1);
     inTree->SetBranchStatus("epf"        , 1);
     inTree->SetBranchStatus("eRawpf"     , 1);
     inTree->SetBranchStatus("etpf"       , 1);
@@ -251,7 +236,7 @@ void skimDistr() {
     inTree->SetBranchAddress("npf"        , &npf);
     inTree->SetBranchAddress("nVtx"       , &nVtx);
     inTree->SetBranchAddress("rho"        , &rho);
-    inTree->SetBranchAddress("puWgt"      , &puWgt);
+    //inTree->SetBranchAddress("puWgt"      , &puWgt);
     inTree->SetBranchAddress("epf"        , epf);
     inTree->SetBranchAddress("eRawpf"     , eRawpf);
     inTree->SetBranchAddress("etpf"       , etpf);
@@ -269,6 +254,30 @@ void skimDistr() {
     inTree->SetBranchAddress("eoppf"      , eoppf);
     inTree->SetBranchAddress("chi2pf"     , chi2pf);
     inTree->SetBranchAddress("mishitspf"  , mishitspf);
+
+    if (isMC) {
+
+    inTree->SetBranchStatus("nBX"     , 1);
+    inTree->SetBranchStatus("BX"      , 1);
+    inTree->SetBranchStatus("nPUtrue" , 1);
+    inTree->SetBranchStatus("nPUobs"  , 1);
+    inTree->SetBranchStatus("gevt_wgt", 1);
+    inTree->SetBranchStatus("gpn"     , 1);
+    inTree->SetBranchStatus("gppt"    , 1);
+    inTree->SetBranchStatus("gpeta"   , 1);
+    inTree->SetBranchStatus("gpphi"   , 1);
+
+    inTree->SetBranchAddress("gevt_wgt", &genWgt);
+    inTree->SetBranchAddress("gpn"     , &gp_n);
+    inTree->SetBranchAddress("gppt"    , gp_pt);
+    inTree->SetBranchAddress("gpeta"   , gp_eta);
+    inTree->SetBranchAddress("gpphi"   , gp_phi);
+    inTree->SetBranchAddress("nBX"     , &nBX);
+    inTree->SetBranchAddress("BX"      , BX);
+    inTree->SetBranchAddress("nPUtrue" , &nPUtrue);
+    inTree->SetBranchAddress("nPUobs"  , nPUobs);
+
+    }
 
     if (hasReco) {
 
@@ -315,26 +324,30 @@ void skimDistr() {
     }
     
     Int_t entries = inTree->GetEntries();
- 
     for (Int_t z = 0; z < entries; z++) {
       inTree->GetEntry(z);
 
+      if (z % 100000 == 1)
+        cout << z << " / " << entries << " done..." << endl;
+
       // check triggering of event first
-      if (accPath != 1) continue;
+      //if (accPath != 1) continue;
 
       itype = type[nfiles];
       weight = weights[nfiles];
-      //puWgt = 1.;
+      puWgt = 1.;
       cand = 0;
 
       for (Int_t i = 0; i < npf; i++) {
 
-        if(!notFake(sieiepf[i], (hoepf[i] / epf[i]),
-                    (ecalpf[i] / etpf[i]), (hcalpf[i] / etpf[i]),
-                    eoppf[i], chi2pf[i], (Float_t) mishitspf[i],
-                    detapf[i], dphipf[i], (tkisopf[i] / etpf[i]))) continue;
+        if(!checkCand("", etapf[i],
+                      sieiepf[i], (hoepf[i] / epf[i]),
+                      (ecalpf[i] / etpf[i]), (hcalpf[i] / etpf[i]),
+                      eoppf[i], chi2pf[i], (Float_t) mishitspf[i],
+                      detaseedpf[i], dphipf[i], (tkisopf[i] / etpf[i]))) continue;
 
-        pass[cand] = 0;
+        passHLT[cand] = 0;
+        genMatch[cand] = 0;
 
         // eca is the corrected sum
 	hlt_e[cand] = epf[i];
@@ -357,26 +370,31 @@ void skimDistr() {
 	hlt_chi[cand] = chi2pf[i];
         hlt_mih[cand] = (Float_t) mishitspf[i];
 
+        if(checkCand("WPTight", hlt_eta[cand], hlt_sie[cand], hlt_hoe[cand], hlt_ecc[cand], hlt_hcc[cand], hlt_eop[cand], hlt_chi[cand], hlt_mih[cand], hlt_des[cand], hlt_dph[cand], hlt_tki[cand]))
+          passHLT[cand] = 1;
+
+        if (isMC) {
+          Float_t drmax = 0.1;
+          for (Int_t j = 0; j < gp_n; j++) {
+
+            Float_t dr = deltaR(hlt_eta[cand], hlt_phi[cand], gp_eta[j], gp_phi[j]);
+            if (dr < drmax) {
+              genMatch[cand] = 1;
+              break;
+            }
+          }
+        }
+
         if (fabs(hlt_eta[cand]) < 1.4791) {
-
-          if(barWPLoose(hlt_sie[cand], hlt_hoe[cand], hlt_ecc[cand], hlt_hcc[cand], hlt_eop[cand], hlt_chi[cand], hlt_mih[cand], hlt_det[cand], hlt_dph[cand], hlt_tki[cand]))
-            pass[cand] = 1;
-
           // Recompute the non-corr iso
           hlt_ecu[cand] = (hlt_eca[cand] + (0.16544 * rho));
           hlt_hcu[cand] = (hlt_hca[cand] + (0.05956 * rho));
-
         }
 
-        else if (fabs(hlt_eta[cand]) >= 1.4791) {
-
-          if(endWPLoose(hlt_sie[cand], hlt_hoe[cand], hlt_ecc[cand], hlt_hcc[cand], hlt_eop[cand], hlt_chi[cand], hlt_mih[cand], hlt_det[cand], hlt_dph[cand], hlt_tki[cand]))
-            pass[cand] = 1;
-
+        if (fabs(hlt_eta[cand]) >= 1.4791) {
           // Recompute the non-corr iso
           hlt_ecu[cand] = (hlt_eca[cand] + (0.13212 * rho));
           hlt_hcu[cand] = (hlt_hca[cand] + (0.13052 * rho));
-
         }
 
         cand++;
@@ -384,26 +402,26 @@ void skimDistr() {
       }
 
       hlt_n = cand;
-      if (hlt_n == 0) continue;
+      if (hlt_n < 2) continue;
 
       if (hasReco) {
 
-        for (Int_t j = 0; j < reco_n; j++) {
+        for (Int_t k = 0; k < reco_n; k++) {
 
-          reco_er[j] = reco_eRaw[j];
-          reco_etr[j] = reco_etRaw[j];
-          reco_sie[j] = reco_sieie[j];
-          reco_eca[j] = reco_ecal[j];
-          reco_ecu[j] = reco_ecal[j] / reco_et[j];
-          reco_dph[j] = fabs(reco_dphi[j]);
-          reco_det[j] = fabs(reco_deta[j]);
-          reco_des[j] = fabs(reco_detaseed[j]);
-          reco_eop[j] = fabs(reco_eop[j]);
-          reco_hca[j] = reco_hcal[j];
-          reco_hcu[j] = reco_hcal[j] / reco_et[j];
-          reco_tki[j] = reco_tkiso[j] / reco_et[j];
-          reco_chi[j] = reco_chi2[j];
-          reco_mih[j] = (Float_t) reco_mishits[j];
+          reco_er[k] = reco_eRaw[k];
+          reco_etr[k] = reco_etRaw[k];
+          reco_sie[k] = reco_sieie[k];
+          reco_eca[k] = reco_ecal[k];
+          reco_ecu[k] = reco_ecal[k] / reco_et[k];
+          reco_dph[k] = fabs(reco_dphi[k]);
+          reco_det[k] = fabs(reco_deta[k]);
+          reco_des[k] = fabs(reco_detaseed[k]);
+          reco_eop[k] = fabs(reco_eop[k]);
+          reco_hca[k] = reco_hcal[k];
+          reco_hcu[k] = reco_hcal[k] / reco_et[k];
+          reco_tki[k] = reco_tkiso[k] / reco_et[k];
+          reco_chi[k] = reco_chi2[k];
+          reco_mih[k] = (Float_t) reco_mishits[k];
 
         }
       }

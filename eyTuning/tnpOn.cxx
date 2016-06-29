@@ -23,78 +23,69 @@
 #include <TLatex.h>
 #include <TBufferFile.h>
 #include <TLorentzVector.h>
-#include "/home/ieeya/root/macros/tdrstyle.C"
+#include "/home/afiqaize/root53434/macros/tdrstyle.C"
 
 using namespace std;
 
-// Subprogram for the tuning
-// One for each region
+Bool_t checkCand(const string setWP, const Float_t eta,
+                 const Float_t sie, const Float_t hoe, const Float_t ecc, const Float_t hcc, 
+                 const Float_t eop, const Float_t chi, const Float_t mih, 
+                 const Float_t des, const Float_t dph, const Float_t tki) {
 
-Bool_t barPass(Float_t sie_cut_b, Float_t hoe_cut_b, Float_t ecc_cut_b, Float_t hcc_cut_b, 
-               Float_t eop_cut_b, Float_t chi_cut_b, Float_t mih_cut_b, 
-               Float_t det_cut_b, Float_t dph_cut_b, Float_t tki_cut_b) {
+  Bool_t candOk = true;
+  Float_t varVal[10], varThr[10];
 
-  Bool_t barOk = false;
+  // Order as in the method call -> HLT filtering
+  varVal[0] = sie; varVal[1] = hoe;
+  varVal[2] = ecc; varVal[3] = hcc;
+  varVal[4] = eop; varVal[5] = chi;
+  varVal[6] = mih; varVal[7] = des;
+  varVal[8] = dph; varVal[9] = tki;
 
-  // All barrel cuts
-
-  if (sie_cut_b <= 0.011) {
-    if (hoe_cut_b <= 0.06) {
-      if (ecc_cut_b <= 0.15) {
-        if (hcc_cut_b <= 0.15) {
-          if (eop_cut_b <= 0.012) {
-            if (dph_cut_b <= 0.02) {
-              if (det_cut_b <= 0.004) {
-                if (tki_cut_b <= 0.08) {
-                  if (mih_cut_b <= 5.5) { // careful at these not 1.0 cuts
-                    if (chi_cut_b <= 15.0)
-                      barOk = true;
-
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
+  if (fabs(eta) < 1.4791 && setWP == "WPLoose") {
+  varThr[0] = 0.011; varThr[1] = 0.06;
+  varThr[2] = 0.145; varThr[3] = 0.15;
+  varThr[4] = 0.012; varThr[5] = 99.0;
+  varThr[6] = 99.0 ; varThr[7] = 0.004;
+  varThr[8] = 0.02 ; varThr[9] = 0.08;
   }
 
-  return barOk;
-
-}
-
-Bool_t endPass(Float_t sie_cut_e, Float_t hoe_cut_e, Float_t ecc_cut_e, Float_t hcc_cut_e, 
-               Float_t eop_cut_e, Float_t chi_cut_e, Float_t mih_cut_e,
-               Float_t det_cut_e, Float_t dph_cut_e, Float_t tki_cut_e) {
-
-  Bool_t endOk = false;
-
-  // All endcap cuts
-
-  if (sie_cut_e <= 0.032) {
-    if (hoe_cut_e <= 0.065) {
-      if (ecc_cut_e <= 0.15) {
-        if (hcc_cut_e <= 0.16) {
-          if (eop_cut_e <= 0.01) {
-            if (dph_cut_e <= 1.0) {
-              if (det_cut_e <= 1.0) {
-                if (tki_cut_e <= 0.08) {
-                  if (mih_cut_e <= 2.5) { // careful at these not 1.0 cuts
-                    if (chi_cut_e <= 2.8)
-                      endOk = true;
-
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
+  else if (fabs(eta) > 1.4791 && setWP == "WPLoose") {
+  varThr[0] = 0.032; varThr[1] = 0.065;
+  varThr[2] = 0.135; varThr[3] = 0.13;
+  varThr[4] = 0.01 ; varThr[5] = 2.8;
+  varThr[6] = 2.5  ; varThr[7] = 0.007;
+  varThr[8] = 0.02 ; varThr[9] = 0.08;
   }
 
-  return endOk;
+  else if (fabs(eta) < 1.4791 && setWP == "WPTight") {
+  varThr[0] = 0.011; varThr[1] = 0.05;
+  varThr[2] = 0.145; varThr[3] = 0.13;
+  varThr[4] = 0.01 ; varThr[5] = 99.0;
+  varThr[6] = 99.0 ; varThr[7] = 0.0035;
+  varThr[8] = 0.015; varThr[9] = 0.06;
+  }
+
+  else if (fabs(eta) > 1.4791 && setWP == "WPTight") {
+  varThr[0] = 0.029; varThr[1] = 0.05;
+  varThr[2] = 0.105; varThr[3] = 0.095;
+  varThr[4] = 0.008; varThr[5] = 2.5;
+  varThr[6] = 1.5  ; varThr[7] = 0.006;
+  varThr[8] = 0.015; varThr[9] = 0.06;
+  }
+
+  else {
+  varThr[0] = 999.; varThr[1] = 999.;
+  varThr[2] = 999.; varThr[3] = 999.;
+  varThr[4] = 999.; varThr[5] = 999.;
+  varThr[6] = 999.; varThr[7] = 999.;
+  varThr[8] = 999.; varThr[9] = 999.;
+  }
+
+  for (Int_t aa = 0; aa < 10; aa++)
+    candOk = candOk and (varVal[aa] < varThr[aa]);
+
+  return candOk;
 
 }
 
@@ -137,19 +128,20 @@ void tnpOn() {
    setTDRStyle();
 
    // Everything to tinker with should be here
-   Double_t yMin_b = .001, yMax_b = 69999.;
-   Double_t yMin_e = .001, yMax_e = 19999.;
+   Double_t yMin_b = .71, yMax_b = 499999.;
+   Double_t yMin_e = .71, yMax_e = 499999.;
 
-   string varName[5], outPre;
-   varName[0] = "mee";
-   outPre = "dyll_";
+   string varName[5], outPre, legHead;
+   varName[0] = "eop";
+   outPre = "hlt_";
+   legHead = "Alignment, ";
 
-   Bool_t drawLog = false;
-   Double_t cut_b = -1., cut_e = -1.;
+   Bool_t drawLog = true;
+   Double_t cut_b = -1, cut_e = -1;
 
    // -------------------------------------------------- //
 
-   string hisLeg = "Full Mult.", pntLeg = "HLT Tuned", pntLeg2 = "HLT Std.";
+   string hisLeg = "Original", pntLeg = "New", pntLeg2 = "lolwtf";
 
    Int_t meeb_nBin = 82, meee_nBin = 82;
    Double_t meeb_max = 110.5, meee_max = 110.5;
@@ -201,9 +193,9 @@ void tnpOn() {
    Double_t mihb_max = 3.5, mihe_max = 5.5;
    Double_t mihb_min = -0.5, mihe_min = -0.5;
 
-   Int_t detb_nBin = 60, dete_nBin = 60;
-   Double_t detb_max = 0.03, dete_max = 0.03;
-   Double_t detb_min = 0., dete_min = 0.;
+   Int_t desb_nBin = 60, dese_nBin = 60;
+   Double_t desb_max = 0.03, dese_max = 0.03;
+   Double_t desb_min = 0., dese_min = 0.;
 
    Int_t dphb_nBin = 100, dphe_nBin = 100;
    Double_t dphb_max = 0.1, dphe_max = 0.1;
@@ -213,9 +205,14 @@ void tnpOn() {
    Double_t tkib_max = 0.5, tkie_max = 0.5;
    Double_t tkib_min = 0., tkie_min = 0.;
 
+   Int_t lolb_nBin = 40, lole_nBin = 40;
+   Double_t lolb_max = .2, lole_max = .2;
+   Double_t lolb_min = -.2, lole_min = -.2;
+
    // -------------------------------------------------- //
 
    varName[3] = "Evt / bin";
+   //varName[3] = "a. u.";
    varName[4] = pntLeg + " / " + hisLeg;
 
    if (varName[0] == "mee") {
@@ -288,16 +285,23 @@ void tnpOn() {
 
    }
 
-   if (varName[0] == "det" or varName[0] == "des") {
+   if (varName[0] == "des") {
 
-     varName[1] = "Track - Supercluster #Delta#eta";
+     varName[1] = "Track - Seed Cluster #Delta#eta";
+     varName[2] = "#Delta#eta_{seed}";
+
+   }
+
+   if (varName[0] == "det") {
+
+     varName[1] = "Track - SC #Delta#eta";
      varName[2] = "#Delta#eta";
 
    }
 
    if (varName[0] == "dph") {
 
-     varName[1] = "Track - Supercluster #Delta#phi";
+     varName[1] = "Track - SC #Delta#phi";
      varName[2] = "#Delta#phi";
 
    }
@@ -326,7 +330,7 @@ void tnpOn() {
    // -------------------------------------------------- //
 
    TH1::SetDefaultSumw2(true);
-   TGaxis::SetMaxDigits(3);
+   //TGaxis::SetMaxDigits(3);
 
    TH1D* mee_1b = new TH1D("mee_1b", (varName[1] + " Distribution").c_str(), meeb_nBin, meeb_min, meeb_max);
    TH1D* mee_1e = new TH1D("mee_1e", (varName[1] + " Distribution").c_str(), meee_nBin, meee_min, meee_max);
@@ -388,10 +392,10 @@ void tnpOn() {
    styleHist(mih_1b, kRed + 1, 0, 20, 1, 1.5);
    styleHist(mih_1e, kRed + 1, 0, 20, 1, 1.5);
 
-   TH1D* det_1b = new TH1D("det_1b", (varName[1] + " Distribution").c_str(), detb_nBin, detb_min, detb_max);
-   TH1D* det_1e = new TH1D("det_1e", (varName[1] + " Distribution").c_str(), dete_nBin, dete_min, dete_max);
-   styleHist(det_1b, kRed + 1, 0, 20, 1, 1.5);
-   styleHist(det_1e, kRed + 1, 0, 20, 1, 1.5);
+   TH1D* des_1b = new TH1D("des_1b", (varName[1] + " Distribution").c_str(), desb_nBin, desb_min, desb_max);
+   TH1D* des_1e = new TH1D("des_1e", (varName[1] + " Distribution").c_str(), dese_nBin, dese_min, dese_max);
+   styleHist(des_1b, kRed + 1, 0, 20, 1, 1.5);
+   styleHist(des_1e, kRed + 1, 0, 20, 1, 1.5);
 
    TH1D* dph_1b = new TH1D("dph_1b", (varName[1] + " Distribution").c_str(), dphb_nBin, dphb_min, dphb_max);
    TH1D* dph_1e = new TH1D("dph_1e", (varName[1] + " Distribution").c_str(), dphe_nBin, dphe_min, dphe_max);
@@ -402,6 +406,11 @@ void tnpOn() {
    TH1D* tki_1e = new TH1D("tki_1e", (varName[1] + " Distribution").c_str(), tkie_nBin, tkie_min, tkie_max);
    styleHist(tki_1b, kRed + 1, 0, 20, 1, 1.5);
    styleHist(tki_1e, kRed + 1, 0, 20, 1, 1.5);
+
+   TH1D* lol_1b = new TH1D("lol_1b", (varName[1] + " Distribution").c_str(), lolb_nBin, lolb_min, lolb_max);
+   TH1D* lol_1e = new TH1D("lol_1e", (varName[1] + " Distribution").c_str(), lole_nBin, lole_min, lole_max);
+   styleHist(lol_1b, kRed + 1, 0, 20, 1, 1.5);
+   styleHist(lol_1e, kRed + 1, 0, 20, 1, 1.5);
 
    // -------------------------------------------------- //
 
@@ -465,10 +474,10 @@ void tnpOn() {
    styleHist(mih_2b, kAzure + 1, 1001, 2, 1, 1.5);
    styleHist(mih_2e, kAzure + 1, 1001, 2, 1, 1.5);
 
-   TH1D* det_2b = new TH1D("det_2b", (varName[1] + " Distribution").c_str(), detb_nBin, detb_min, detb_max);
-   TH1D* det_2e = new TH1D("det_2e", (varName[1] + " Distribution").c_str(), dete_nBin, dete_min, dete_max);
-   styleHist(det_2b, kAzure + 1, 1001, 2, 1, 1.5);
-   styleHist(det_2e, kAzure + 1, 1001, 2, 1, 1.5);
+   TH1D* des_2b = new TH1D("des_2b", (varName[1] + " Distribution").c_str(), desb_nBin, desb_min, desb_max);
+   TH1D* des_2e = new TH1D("des_2e", (varName[1] + " Distribution").c_str(), dese_nBin, dese_min, dese_max);
+   styleHist(des_2b, kAzure + 1, 1001, 2, 1, 1.5);
+   styleHist(des_2e, kAzure + 1, 1001, 2, 1, 1.5);
 
    TH1D* dph_2b = new TH1D("dph_2b", (varName[1] + " Distribution").c_str(), dphb_nBin, dphb_min, dphb_max);
    TH1D* dph_2e = new TH1D("dph_2e", (varName[1] + " Distribution").c_str(), dphe_nBin, dphe_min, dphe_max);
@@ -479,6 +488,11 @@ void tnpOn() {
    TH1D* tki_2e = new TH1D("tki_2e", (varName[1] + " Distribution").c_str(), tkie_nBin, tkie_min, tkie_max);
    styleHist(tki_2b, kAzure + 1, 1001, 2, 1, 1.5);
    styleHist(tki_2e, kAzure + 1, 1001, 2, 1, 1.5);
+
+   TH1D* lol_2b = new TH1D("lol_2b", (varName[1] + " Distribution").c_str(), lolb_nBin, lolb_min, lolb_max);
+   TH1D* lol_2e = new TH1D("lol_2e", (varName[1] + " Distribution").c_str(), lole_nBin, lole_min, lole_max);
+   styleHist(lol_2b, kAzure + 1, 1001, 2, 1, 1.5);
+   styleHist(lol_2e, kAzure + 1, 1001, 2, 1, 1.5);
 
    // -------------------------------------------------- //
 
@@ -542,10 +556,10 @@ void tnpOn() {
    styleHist(mih_3b, kYellow + 1, 0, 23, 1, 2.0);
    styleHist(mih_3e, kYellow + 1, 0, 23, 1, 2.0);
 
-   TH1D* det_3b = new TH1D("det_3b", (varName[1] + " Distribution").c_str(), detb_nBin, detb_min, detb_max);
-   TH1D* det_3e = new TH1D("det_3e", (varName[1] + " Distribution").c_str(), dete_nBin, dete_min, dete_max);
-   styleHist(det_3b, kYellow + 1, 0, 23, 1, 2.0);
-   styleHist(det_3e, kYellow + 1, 0, 23, 1, 2.0);
+   TH1D* des_3b = new TH1D("des_3b", (varName[1] + " Distribution").c_str(), desb_nBin, desb_min, desb_max);
+   TH1D* des_3e = new TH1D("des_3e", (varName[1] + " Distribution").c_str(), dese_nBin, dese_min, dese_max);
+   styleHist(des_3b, kYellow + 1, 0, 23, 1, 2.0);
+   styleHist(des_3e, kYellow + 1, 0, 23, 1, 2.0);
 
    TH1D* dph_3b = new TH1D("dph_3b", (varName[1] + " Distribution").c_str(), dphb_nBin, dphb_min, dphb_max);
    TH1D* dph_3e = new TH1D("dph_3e", (varName[1] + " Distribution").c_str(), dphe_nBin, dphe_min, dphe_max);
@@ -557,18 +571,28 @@ void tnpOn() {
    styleHist(tki_3b, kYellow + 1, 0, 23, 1, 2.0);
    styleHist(tki_3e, kYellow + 1, 0, 23, 1, 2.0);
 
+   TH1D* lol_3b = new TH1D("lol_3b", (varName[1] + " Distribution").c_str(), lolb_nBin, lolb_min, lolb_max);
+   TH1D* lol_3e = new TH1D("lol_3e", (varName[1] + " Distribution").c_str(), lole_nBin, lole_min, lole_max);
+   styleHist(lol_3b, kYellow + 1, 0, 23, 1, 2.0);
+   styleHist(lol_3e, kYellow + 1, 0, 23, 1, 2.0);
+
    // -------------------------------------------------- //
 
-   string const inDir = "/home/ieeya/Downloads/HLT_Val/dev/e_80x/file/v0p4/";
+   string const inDir = "/home/afiqaize/Downloads/HLT_Val/dev/e_80x/file/v11/eeAngEff_Jun13/";
 
    TChain *t1 = new TChain("eleDistr");
-   t1->Add((inDir + "dat_p1Tune_*.root").c_str());
-   t1->Add((inDir + "dat_p2Std_*.root").c_str());
-   t1->Add((inDir + "dat_p3Full_*.root").c_str());
-   t1->Add((inDir + "dyll_m1Tune_m2Std_m3Full.root").c_str());
+   t1->Add((inDir + "skim_ele25_tig_newAlign_?.root").c_str());
+   t1->Add((inDir + "skim_ele25_tig_oriAlign_?.root").c_str());
+   //t1->Add((inDir + "skim_hltPhy_*.root").c_str());
 
-   //TFile *f1 = new TFile((inDir + "xxx.root").c_str());
-   //TTree *t1 = (TTree *) f1->Get("eleDistr");
+   Bool_t isMC = false;
+
+   Int_t nRun;
+   t1->SetBranchAddress("nRun", &nRun);
+   Int_t nEvt;
+   t1->SetBranchAddress("nEvt", &nEvt);
+   Int_t nLumi;
+   t1->SetBranchAddress("nLumi", &nLumi);
 
    Int_t type;
    t1->SetBranchAddress("itype", &type);
@@ -576,9 +600,13 @@ void tnpOn() {
    t1->SetBranchAddress("weight", &weight);
    Float_t puWgt;
    t1->SetBranchAddress("puWgt", &puWgt);
+   Float_t rho;
+   t1->SetBranchAddress("rho", &rho);
 
    Int_t pass[10];
-   t1->SetBranchAddress("pass_hlt", pass);
+   t1->SetBranchAddress("passHLT", pass);
+   Int_t genMatch[10];
+   t1->SetBranchAddress("genMatch", genMatch);
    Int_t n;
    t1->SetBranchAddress("hlt_n", &n);
    Float_t et[10];
@@ -601,10 +629,14 @@ void tnpOn() {
    t1->SetBranchAddress("hlt_eca", eca);
    Float_t ecc[10];
    t1->SetBranchAddress("hlt_ecc", ecc);
+   Float_t ecu[10];
+   t1->SetBranchAddress("hlt_ecu", ecu);
    Float_t hca[10];
    t1->SetBranchAddress("hlt_hca", hca);
    Float_t hcc[10];
    t1->SetBranchAddress("hlt_hcc", hcc);
+   Float_t hcu[10];
+   t1->SetBranchAddress("hlt_hcu", hcu);
    Float_t eop[10];
    t1->SetBranchAddress("hlt_eop", eop);
    Float_t chi[10];
@@ -620,10 +652,23 @@ void tnpOn() {
    Float_t tki[10];
    t1->SetBranchAddress("hlt_tki", tki);
 
+   Int_t nBX, nPUtrue;
+   Int_t BX[100], nPUobs[100];
+
+    if (isMC) {
+
+    t1->SetBranchAddress("nBX", &nBX);
+    t1->SetBranchAddress("BX", BX);
+    t1->SetBranchAddress("nPUtrue", &nPUtrue);
+    t1->SetBranchAddress("nPUobs", nPUobs);
+
+    }
+
    // -------------------------------------------------- //
 
    TLorentzVector p4Tag, p4Probe;
    Float_t finWgt = 1.;
+   Int_t cnt1 = 0, cnt2 = 0;
 
    Int_t nEvt1 = t1->GetEntries();
    cout << "nEvt1 = " << nEvt1 << endl;
@@ -632,18 +677,19 @@ void tnpOn() {
 
      t1->GetEntry(evt1);
      finWgt = puWgt * weight;
+     if (n < 2) continue;
 
      for (Int_t iTag = 0; iTag < n; iTag++) {
 
        if (pass[iTag] != 1) continue;
-       if ((et[iTag] < 25.) or (eta[iTag] > 2.5)) continue;
+       if ((et[iTag] < 25.) or (fabs(eta[iTag]) > 2.5)) continue;
 
        p4Tag.SetPtEtaPhiE(et[iTag], eta[iTag], phi[iTag], e[iTag]);
 
        for (Int_t iProbe = 0; iProbe < n; iProbe++) {
 
          if (iProbe == iTag) continue;
-         if (et[iProbe] < 15.) continue;
+         if ((et[iProbe] < 25.) or (fabs(eta[iProbe]) > 2.5)) continue;
 
          p4Probe.SetPtEtaPhiE(et[iProbe], eta[iProbe], phi[iProbe], e[iProbe]);
 
@@ -652,12 +698,13 @@ void tnpOn() {
          //p4Tag.SetPtEtaPhiE(etr[iTag], eta[iTag], phi[iTag], er[iTag]);
          //p4Probe.SetPtEtaPhiE(etr[iProbe], eta[iProbe], phi[iProbe], er[iProbe]);
 
-         if (type == -1) {
+         if (!checkCand("", eta[iProbe],
+                        sie[iProbe], hoe[iProbe], ecc[iProbe], hcc[iProbe], eop[iProbe],
+                        chi[iProbe], mih[iProbe], des[iProbe], dph[iProbe], tki[iProbe])) continue;
 
-           if (fabs(eta[iProbe]) < 1.4791) {
+         if (type == 2) {
 
-             if(!barPass(sie[iProbe], hoe[iProbe], ecc[iProbe], hcc[iProbe], eop[iProbe],
-                         chi[iProbe], mih[iProbe], det[iProbe], dph[iProbe], tki[iProbe])) continue;
+           if (fabs(eta[iProbe]) < 1.444) {
 
              sie_1b->Fill(sie[iProbe], finWgt);
              hoe_1b->Fill(hoe[iProbe], finWgt);
@@ -668,16 +715,19 @@ void tnpOn() {
              eop_1b->Fill(eop[iProbe], finWgt);
              chi_1b->Fill(chi[iProbe], finWgt);
              mih_1b->Fill(mih[iProbe], finWgt);
-             det_1b->Fill(det[iProbe], finWgt);
+             des_1b->Fill(des[iProbe], finWgt);
              dph_1b->Fill(dph[iProbe], finWgt);
              tki_1b->Fill(tki[iProbe], finWgt);
+
+             lol_1b->Fill((ecu[iProbe] - 0.079*rho) / et[iProbe], finWgt);
  
            }
 
-           if (fabs(eta[iProbe]) >= 1.4791) {
+           if (fabs(eta[iProbe]) >= 1.566) {
+           //if (fabs(eta[iProbe]) >= 2.1) {
 
-             if(!endPass(sie[iProbe], hoe[iProbe], ecc[iProbe], hcc[iProbe], eop[iProbe],
-                         chi[iProbe], mih[iProbe], det[iProbe], dph[iProbe], tki[iProbe])) continue;
+             //if (cnt1 > 333111) continue;
+             //cnt1++;
 
              sie_1e->Fill(sie[iProbe], finWgt);
              hoe_1e->Fill(hoe[iProbe], finWgt);
@@ -688,13 +738,15 @@ void tnpOn() {
              eop_1e->Fill(eop[iProbe], finWgt);
              chi_1e->Fill(chi[iProbe], finWgt);
              mih_1e->Fill(mih[iProbe], finWgt);
-             det_1e->Fill(det[iProbe], finWgt);
+             des_1e->Fill(det[iProbe], finWgt);
              dph_1e->Fill(dph[iProbe], finWgt);
              tki_1e->Fill(tki[iProbe], finWgt);
 
+             lol_1e->Fill((ecu[iProbe] - 0.044*rho) / et[iProbe], finWgt);
+
            }
 
-           if (eta[iTag] < 1.4791 and eta[iProbe] < 1.4791)
+           if (eta[iTag] < 1.444 and eta[iProbe] < 1.444)
              mee_1b->Fill((p4Tag + p4Probe).M(), finWgt);
 
            else
@@ -702,12 +754,9 @@ void tnpOn() {
 
          }
 
-         if (type == -3) {
+         if (type == 1) {
 
-           if (fabs(eta[iProbe]) < 1.4791) {
-
-             if(!barPass(sie[iProbe], hoe[iProbe], ecc[iProbe], hcc[iProbe], eop[iProbe],
-                         chi[iProbe], mih[iProbe], det[iProbe], dph[iProbe], tki[iProbe])) continue;
+           if (fabs(eta[iProbe]) < 1.444) {
 
              sie_2b->Fill(sie[iProbe], finWgt);
              hoe_2b->Fill(hoe[iProbe], finWgt);
@@ -718,16 +767,19 @@ void tnpOn() {
              eop_2b->Fill(eop[iProbe], finWgt);
              chi_2b->Fill(chi[iProbe], finWgt);
              mih_2b->Fill(mih[iProbe], finWgt);
-             det_2b->Fill(det[iProbe], finWgt);
+             des_2b->Fill(des[iProbe], finWgt);
              dph_2b->Fill(dph[iProbe], finWgt);
              tki_2b->Fill(tki[iProbe], finWgt);
 
+             lol_2b->Fill(ecu[iProbe] - 0.079*rho, finWgt);
+
            }
 
-           if (fabs(eta[iProbe]) >= 1.4791) {
+           if (fabs(eta[iProbe]) >= 1.566) {
+           //if (fabs(eta[iProbe]) >= 2.1) {
 
-             if(!endPass(sie[iProbe], hoe[iProbe], ecc[iProbe], hcc[iProbe], eop[iProbe],
-                         chi[iProbe], mih[iProbe], det[iProbe], dph[iProbe], tki[iProbe])) continue;
+             //if (cnt2 > 333111) continue;
+             //cnt2++;
 
              sie_2e->Fill(sie[iProbe], finWgt);
              hoe_2e->Fill(hoe[iProbe], finWgt);
@@ -738,13 +790,15 @@ void tnpOn() {
              eop_2e->Fill(eop[iProbe], finWgt);
              chi_2e->Fill(chi[iProbe], finWgt);
              mih_2e->Fill(mih[iProbe], finWgt);
-             det_2e->Fill(det[iProbe], finWgt);
+             des_2e->Fill(det[iProbe], finWgt);
              dph_2e->Fill(dph[iProbe], finWgt);
              tki_2e->Fill(tki[iProbe], finWgt);
 
+             lol_2e->Fill(ecu[iProbe] - 0.044*rho, finWgt);
+
            }
 
-           if (eta[iTag] < 1.4791 and eta[iProbe] < 1.4791)
+           if (eta[iTag] < 1.444 and eta[iProbe] < 1.444)
              mee_2b->Fill((p4Tag + p4Probe).M(), finWgt);
 
            else
@@ -752,12 +806,9 @@ void tnpOn() {
 
          }
 
-         if (type == -2) {
+         if (type == -99) {
 
-           if (fabs(eta[iProbe]) < 1.4791) {
-
-             if(!barPass(sie[iProbe], hoe[iProbe], ecc[iProbe], hcc[iProbe], eop[iProbe],
-                         chi[iProbe], mih[iProbe], det[iProbe], dph[iProbe], tki[iProbe])) continue;
+           if (fabs(eta[iProbe]) < 1.444) {
 
              sie_3b->Fill(sie[iProbe], finWgt);
              hoe_3b->Fill(hoe[iProbe], finWgt);
@@ -768,16 +819,15 @@ void tnpOn() {
              eop_3b->Fill(eop[iProbe], finWgt);
              chi_3b->Fill(chi[iProbe], finWgt);
              mih_3b->Fill(mih[iProbe], finWgt);
-             det_3b->Fill(det[iProbe], finWgt);
+             des_3b->Fill(des[iProbe], finWgt);
              dph_3b->Fill(dph[iProbe], finWgt);
              tki_3b->Fill(tki[iProbe], finWgt);
 
+             lol_3b->Fill(ecu[iProbe] - 0.079*rho, finWgt);
+
            }
 
-           if (fabs(eta[iProbe]) >= 1.4791) {
-
-             if(!endPass(sie[iProbe], hoe[iProbe], ecc[iProbe], hcc[iProbe], eop[iProbe],
-                         chi[iProbe], mih[iProbe], det[iProbe], dph[iProbe], tki[iProbe])) continue;
+           if (fabs(eta[iProbe]) >= 1.566) {
 
              sie_3e->Fill(sie[iProbe], finWgt);
              hoe_3e->Fill(hoe[iProbe], finWgt);
@@ -788,13 +838,15 @@ void tnpOn() {
              eop_3e->Fill(eop[iProbe], finWgt);
              chi_3e->Fill(chi[iProbe], finWgt);
              mih_3e->Fill(mih[iProbe], finWgt);
-             det_3e->Fill(det[iProbe], finWgt);
+             des_3e->Fill(des[iProbe], finWgt);
              dph_3e->Fill(dph[iProbe], finWgt);
              tki_3e->Fill(tki[iProbe], finWgt);
 
+             lol_3e->Fill(ecu[iProbe] - 0.044*rho, finWgt);
+
            }
 
-           if (eta[iTag] < 1.4791 and eta[iProbe] < 1.4791)
+           if (eta[iTag] < 1.444 and eta[iProbe] < 1.444)
              mee_3b->Fill((p4Tag + p4Probe).M(), finWgt);
 
            else
@@ -805,15 +857,21 @@ void tnpOn() {
      }
    }
 
-   //cout << det_1b->GetEntries() << " " << det_2b->GetEntries() << endl;
-   //cout << det_1e->GetEntries() << " " << det_2e->GetEntries() << endl;
-
    // -------------------------------------------------- //
 
-   //mee_2b->Scale(mee_1b->Integral() / mee_2b->Integral()); mee_2e->Scale(mee_1e->Integral() / mee_2e->Integral());
+   cout << eop_1b->GetEntries() << " " << eop_2b->GetEntries() << endl;
+   cout << eop_1e->GetEntries() << " " << eop_2e->GetEntries() << endl;
 
-   static const Int_t nStep_b = meeb_nBin + 1, nStep_e = meee_nBin + 1;
-   Double_t sStep_b = (meeb_max - meeb_min) / meeb_nBin, sStep_e = (meee_max - meee_min) / meee_nBin;
+   cout << "EB Mean: New: " << eop_1b->GetMean() << " Ori: " << eop_2b->GetMean() << endl;
+   cout << "EB RMS: New: " << eop_1b->GetRMS() << " Ori: " << eop_2b->GetRMS() << endl;
+   cout << "EE Mean: New: " << eop_1e->GetMean() << " Ori: " << eop_2e->GetMean() << endl;
+   cout << "EE RMS: New: " << eop_1e->GetRMS() << " Ori: " << eop_2e->GetRMS() << endl;
+
+   //eop_1b->Scale( 1. / eop_1b->Integral()); eop_1e->Scale( 1. / eop_1e->Integral());
+   //eop_2b->Scale( 1. / eop_2b->Integral()); eop_2e->Scale( 1. / eop_2e->Integral());
+
+   static const Int_t nStep_b = eopb_nBin + 1, nStep_e = eope_nBin + 1;
+   Double_t sStep_b = (eopb_max - eopb_min) / eopb_nBin, sStep_e = (eope_max - eope_min) / eope_nBin;
 
    Float_t l1b[nStep_b], eff_xb[nStep_b];
    Float_t l1e[nStep_e], eff_xe[nStep_e];
@@ -822,7 +880,7 @@ void tnpOn() {
    for (Int_t bb = 0; bb < nStep_b; bb++) {
 
      l1b[bb] = 1.;
-     eff_xb[bb] = (bb * sStep_b) + meeb_min;
+     eff_xb[bb] = (bb * sStep_b) + eopb_min;
 
      std_xb[bb] = cut_b;
      if (bb == 0) std_yb[bb] = yMax_b;
@@ -834,7 +892,7 @@ void tnpOn() {
    for (Int_t ee = 0; ee < nStep_e; ee++) {
 
      l1e[ee] = 1.;
-     eff_xe[ee] = (ee * sStep_e) + meee_min;
+     eff_xe[ee] = (ee * sStep_e) + eope_min;
 
      std_xe[ee] = cut_e;
      if (ee == 0) std_ye[ee] = yMax_e;
@@ -843,21 +901,21 @@ void tnpOn() {
 
    }
 
-   TGraph *lineb = new TGraph(meeb_nBin + 1, eff_xb, l1b);
+   TGraph *lineb = new TGraph(eopb_nBin + 1, eff_xb, l1b);
    lineb->SetLineColor(kYellow + 1);
    lineb->SetLineWidth(2);
 
-   TGraph *linee = new TGraph(meee_nBin + 1, eff_xe, l1e);
+   TGraph *linee = new TGraph(eope_nBin + 1, eff_xe, l1e);
    linee->SetLineColor(kYellow + 1);
    linee->SetLineWidth(2);
 
-   TH1D *sfb = new TH1D("", "", meeb_nBin, meeb_min, meeb_max);
-   sfb->Divide(mee_1b, mee_2b, 1., 1., "B");
+   TH1D *sfb = new TH1D("", "", eopb_nBin, eopb_min, eopb_max);
+   sfb->Divide(eop_1b, eop_2b, 1., 1., "B");
    styleHist(sfb, kBlack, 0, 2, 1, 1.0);
    axHist(sfb, 0.001, 1.999, varName[4], 0.061, 0.49, 0.059, varName[2], 0.061, 1.15, 0.059);
 
-   TH1D *sfe = new TH1D("", "", meee_nBin, meee_min, meee_max);
-   sfe->Divide(mee_1e, mee_2e, 1., 1., "B");
+   TH1D *sfe = new TH1D("", "", eope_nBin, eope_min, eope_max);
+   sfe->Divide(eop_1e, eop_2e, 1., 1., "B");
    styleHist(sfe, kBlack, 0, 2, 1, 1.0);
    axHist(sfe, 0.001, 1.999, varName[4], 0.061, 0.49, 0.059, varName[2], 0.061, 1.15, 0.059);
 
@@ -876,32 +934,30 @@ void tnpOn() {
    txt.SetTextAlign(13);
 
    if (drawLog) {
-
-     yMin_b++;
-     yMin_e++;
-
+     //yMin_b++;
+     //yMin_e++;
    }
 
-   axHist(mee_2b, yMin_b, yMax_b, varName[3], 0.027, 1.05, 0.025, varName[2], 0.027, 1.15, 0.025);
-   axHist(mee_2e, yMin_e, yMax_e, varName[3], 0.027, 1.05, 0.025, varName[2], 0.027, 1.15, 0.025);
+   axHist(eop_2b, yMin_b, yMax_b, varName[3], 0.027, 1.05, 0.025, varName[2], 0.027, 1.15, 0.025);
+   axHist(eop_2e, yMin_e, yMax_e, varName[3], 0.027, 1.05, 0.025, varName[2], 0.027, 1.15, 0.025);
 
-   TLegend *leg01 = new TLegend(.71, .67, .89, .85);
-   leg01->SetHeader("EB Tag and EB Probe");
-   //leg01->SetHeader("#left|#eta^{e}#right| < 1.479");
-   leg01->AddEntry(mee_2b, (hisLeg).c_str(), "f");
-   leg01->AddEntry(mee_1b, (pntLeg).c_str(), "p");
-   leg01->AddEntry(mee_3b, (pntLeg2).c_str(), "l");
+   TLegend *leg01 = new TLegend(.69, .67, .87, .85);
+   //leg01->SetHeader((legHead + "T_{EB} and P_{EB}").c_str());
+   leg01->SetHeader((legHead + "#left|#eta^{e}#right| < 1.444").c_str());
+   leg01->AddEntry(eop_2b, (hisLeg).c_str(), "f");
+   leg01->AddEntry(eop_1b, (pntLeg).c_str(), "p");
+   //leg01->AddEntry(eop_3b, (pntLeg2).c_str(), "l");
    leg01->SetFillColor(0);
    leg01->SetBorderSize(0);
    leg01->SetTextSize(0.03);
    leg01->SetTextFont(42);
 
-   TLegend *leg02 = new TLegend(.71, .67, .89, .85);
-   leg02->SetHeader("!(EB Tag and EB Probe)");
-   //leg02->SetHeader("#left|#eta^{e}#right| > 1.479");
-   leg02->AddEntry(mee_2e, (hisLeg).c_str(), "f");
-   leg02->AddEntry(mee_1e, (pntLeg).c_str(), "p");
-   leg02->AddEntry(mee_3e, (pntLeg2).c_str(), "l");
+   TLegend *leg02 = new TLegend(.69, .67, .87, .85);
+   //leg02->SetHeader((legHead + "!(T_{EB} and P_{EB})").c_str());
+   leg02->SetHeader((legHead + "#left|#eta^{e}#right| > 1.566").c_str());
+   leg02->AddEntry(eop_2e, (hisLeg).c_str(), "f");
+   leg02->AddEntry(eop_1e, (pntLeg).c_str(), "p");
+   //leg02->AddEntry(eop_3e, (pntLeg2).c_str(), "l");
    leg02->SetFillColor(0);
    leg02->SetBorderSize(0);
    leg02->SetTextSize(0.03);
@@ -909,7 +965,7 @@ void tnpOn() {
 
    // -------------------------------------------------- //
 
-   string const outDir = inDir + "plot/";
+   string const outDir = inDir + "";
 
    TCanvas *c01 = new TCanvas("c01", "c01", 200, 10, 1000, 1000);
    TCanvas *c02 = new TCanvas("c02", "c02", 200, 10, 1000, 1000);
@@ -922,14 +978,14 @@ void tnpOn() {
    pad1->cd();
 
    if (drawLog) pad1->SetLogy();
-   mee_2b->Draw("hist");
-   mee_1b->Draw("pesame");
-   mee_3b->Draw("histsame");
+   eop_2b->Draw("hist");
+   eop_1b->Draw("pesame");
+   //eop_3b->Draw("histsame");
    stdb->Draw("same");
 
    leg01->Draw();
-   txt.DrawLatexNDC(0.11, 0.928, "#bf{CMS} #it{Preliminary}");
-   txt.DrawLatexNDC(0.783, 0.933, "2.138 fb^{-1} (13 TeV)");
+   //txt.DrawLatexNDC(0.11, 0.928, "#bf{CMS} #it{Preliminary}");
+   //txt.DrawLatexNDC(0.783, 0.933, "2.138 fb^{-1} (13 TeV)");
 
    c01->cd();
    TPad *pad2 = new TPad("pad2", "pad2", 0., 0., 1., 0.29);
@@ -943,7 +999,7 @@ void tnpOn() {
    sfb->Draw("same");
 
    c01->cd();
-   c01->SaveAs((outDir + outPre + varName[0] + "_bar.pdf").c_str());
+   c01->SaveAs((outDir + outPre + varName[0] + "_eb.pdf").c_str());
 
    c02->cd();
 
@@ -953,14 +1009,14 @@ void tnpOn() {
    pad3->cd();
 
    if (drawLog) pad3->SetLogy();
-   mee_2e->Draw("hist");
-   mee_1e->Draw("pesame");
-   mee_3e->Draw("histsame");
+   eop_2e->Draw("hist");
+   eop_1e->Draw("pesame");
+   //eop_3e->Draw("histsame");
    stde->Draw("same");
 
    leg02->Draw();
-   txt.DrawLatexNDC(0.11, 0.928, "#bf{CMS} #it{Preliminary}");
-   txt.DrawLatexNDC(0.783, 0.933, "2.138 fb^{-1} (13 TeV)");
+   //txt.DrawLatexNDC(0.11, 0.928, "#bf{CMS} #it{Preliminary}");
+   //txt.DrawLatexNDC(0.783, 0.933, "2.138 fb^{-1} (13 TeV)");
 
    c02->cd();
    TPad *pad4 = new TPad("pad4", "pad4", 0., 0., 1., 0.29);
@@ -974,7 +1030,7 @@ void tnpOn() {
    sfe->Draw("same");
 
    c02->cd();
-   c02->SaveAs((outDir + outPre + varName[0] + "_end.pdf").c_str());
+   c02->SaveAs((outDir + outPre + varName[0] + "_ee.pdf").c_str());
 
    // -------------------------------------------------- //
 

@@ -16,6 +16,9 @@
 // Feb 03 2016: Reverting back to hltPixelVertices for nVtx
 // Mar 07 2016: MC-only PU information and updated genParticle info
 // Mar 25 2016: Gen event weight
+// Jun 28 2016: Remove the abs of GSF vars TO BE CHECKED/PROPAGATED DOWNSTREAM
+// Jun 28 2016: Defaults moved to 999999. to be compatible with var producers
+// TODO float -> double migration; TO BE PROPAGATED DOWNSTREAM
 
 #include <memory>
 
@@ -125,7 +128,7 @@ private:
   edm::EDGetTokenT<reco::RecoEcalCandidateIsolationMap> hoeToken;
   edm::EDGetTokenT<reco::RecoEcalCandidateIsolationMap> tkisoToken;
   edm::EDGetTokenT<reco::RecoEcalCandidateIsolationMap> detaToken;
-  edm::EDGetTokenT<reco::RecoEcalCandidateIsolationMap> detaSeedToken;
+  edm::EDGetTokenT<reco::RecoEcalCandidateIsolationMap> detaseedToken;
   edm::EDGetTokenT<reco::RecoEcalCandidateIsolationMap> dphiToken;
   edm::EDGetTokenT<reco::RecoEcalCandidateIsolationMap> eopToken;
   edm::EDGetTokenT<reco::RecoEcalCandidateIsolationMap> mishitsToken;
@@ -156,9 +159,9 @@ private:
   Float_t detapf[10];
   Float_t detaseedpf[10];
   Float_t dphipf[10];
-  Float_t tkptpf[10];
-  Float_t tketapf[10];
-  Float_t tkphipf[10];
+  //Float_t tkptpf[10];
+  //Float_t tketapf[10];
+  //Float_t tkphipf[10];
   Float_t hoepf[10];
   Float_t hcalpf[10];
   Float_t tkisopf[10];
@@ -199,6 +202,9 @@ private:
   bool isData;
   bool saveReco;
 
+  bool debug;
+  string evtAcc;
+
 };
 
 void plotDistr::beginRun(const edm::Run& run,const edm::EventSetup& setup) {
@@ -235,7 +241,7 @@ plotDistr::plotDistr(const edm::ParameterSet& iParSet) {
   hoeToken        = consumes<reco::RecoEcalCandidateIsolationMap>(edm::InputTag("hltEgammaHoverE"));
   tkisoToken      = consumes<reco::RecoEcalCandidateIsolationMap>(edm::InputTag("hltEgammaEleGsfTrackIso"));
   detaToken       = consumes<reco::RecoEcalCandidateIsolationMap>(edm::InputTag("hltEgammaGsfTrackVars:Deta"));
-  detaSeedToken   = consumes<reco::RecoEcalCandidateIsolationMap>(edm::InputTag("hltEgammaGsfTrackVars:DetaSeed"));
+  detaseedToken   = consumes<reco::RecoEcalCandidateIsolationMap>(edm::InputTag("hltEgammaGsfTrackVars:DetaSeed"));
   dphiToken       = consumes<reco::RecoEcalCandidateIsolationMap>(edm::InputTag("hltEgammaGsfTrackVars:Dphi"));
   eopToken        = consumes<reco::RecoEcalCandidateIsolationMap>(edm::InputTag("hltEgammaGsfTrackVars:OneOESuperMinusOneOP"));
   chi2Token       = consumes<reco::RecoEcalCandidateIsolationMap>(edm::InputTag("hltEgammaGsfTrackVars:Chi2"));
@@ -281,9 +287,14 @@ void plotDistr::mcTruth(edm::Handle<reco::GenParticleCollection> gpH) {
 
 void plotDistr::analyze(const edm::Event& iEvt, const edm::EventSetup& iSetup) {
 
+  debug = true;
+
   nRun = iEvt.eventAuxiliary().run();
   nEvt = iEvt.eventAuxiliary().event();
   nLumi = iEvt.eventAuxiliary().luminosityBlock();
+
+  if (debug)
+    std::cout << "Processing event " << nEvt << " in run / lumi " << nRun << " / " << nLumi << std::endl; 
 
   edm::Handle<edm::TriggerResults> trgResH;
   iEvt.getByToken(trgResToken, trgResH);
@@ -337,21 +348,21 @@ void plotDistr::analyze(const edm::Event& iEvt, const edm::EventSetup& iSetup) {
     for (unsigned int i=0; i<elH->size(); i++) {
       if (reco_n == 9)
 	continue;
-      reco_e[reco_n] = 9999.;
-      reco_et[reco_n] = 9999.;
-      reco_eta[reco_n] = 9999.;
-      reco_phi[reco_n] = 9999.;
-      reco_sieie[reco_n] = 9999.;
-      reco_hoe[reco_n] = 9999.;
-      reco_ecal[reco_n] = 9999.;
-      reco_hcal[reco_n] = 9999.;
-      reco_eop[reco_n] = 9999.;
-      reco_mishits[reco_n] = 9999;
-      reco_deta[reco_n] = 9999.;
-      reco_detaseed[reco_n] = 9999.;
-      reco_dphi[reco_n] = 9999.;
-      reco_chi2[reco_n] = 9999.;
-      reco_tkiso[reco_n] = 9999.;
+      reco_e[reco_n] = 999999.;
+      reco_et[reco_n] = 999999.;
+      reco_eta[reco_n] = 999999.;
+      reco_phi[reco_n] = 999999.;
+      reco_sieie[reco_n] = 999999.;
+      reco_hoe[reco_n] = 999999.;
+      reco_ecal[reco_n] = 999999.;
+      reco_hcal[reco_n] = 999999.;
+      reco_eop[reco_n] = 999999.;
+      reco_mishits[reco_n] = 999999;
+      reco_deta[reco_n] = 999999.;
+      reco_detaseed[reco_n] = 999999.;
+      reco_dphi[reco_n] = 999999.;
+      reco_chi2[reco_n] = 999999.;
+      reco_tkiso[reco_n] = 999999.;
       
       reco::GsfElectronRef el(elH, i);
       reco::GsfElectron::PflowIsolationVariables pfIso = el->pfIsolationVariables();
@@ -392,7 +403,7 @@ void plotDistr::analyze(const edm::Event& iEvt, const edm::EventSetup& iSetup) {
   edm::Handle<reco::RecoEcalCandidateIsolationMap> hoeMapH;
   edm::Handle<reco::RecoEcalCandidateIsolationMap> tkisoMapH;
   edm::Handle<reco::RecoEcalCandidateIsolationMap> detaMapH;
-  edm::Handle<reco::RecoEcalCandidateIsolationMap> detaSeedMapH;
+  edm::Handle<reco::RecoEcalCandidateIsolationMap> detaseedMapH;
   edm::Handle<reco::RecoEcalCandidateIsolationMap> dphiMapH;
   edm::Handle<reco::RecoEcalCandidateIsolationMap> eopMapH;
   edm::Handle<reco::RecoEcalCandidateIsolationMap> mishitsMapH;
@@ -413,7 +424,7 @@ void plotDistr::analyze(const edm::Event& iEvt, const edm::EventSetup& iSetup) {
   if (!rhoH.failedToGet())
     rho = *(rhoH.product());
   else
-    rho = 9999.;
+    rho = 999999.;
 
   npf = 0;
   iEvt.getByToken(cToken, cH);
@@ -449,10 +460,10 @@ void plotDistr::analyze(const edm::Event& iEvt, const edm::EventSetup& iSetup) {
     if (!detaMapH.failedToGet())
       detaMapPF = detaMapH.product();
 
-    const reco::RecoEcalCandidateIsolationMap* detaSeedMapPF = 0;
-    iEvt.getByToken(detaSeedToken, detaSeedMapH);
-    if (!detaSeedMapH.failedToGet())
-      detaSeedMapPF = detaSeedMapH.product();
+    const reco::RecoEcalCandidateIsolationMap* detaseedMapPF = 0;
+    iEvt.getByToken(detaseedToken, detaseedMapH);
+    if (!detaseedMapH.failedToGet())
+      detaseedMapPF = detaseedMapH.product();
       
     const reco::RecoEcalCandidateIsolationMap* dphiMapPF = 0;
     iEvt.getByToken(dphiToken, dphiMapH);
@@ -482,27 +493,27 @@ void plotDistr::analyze(const edm::Event& iEvt, const edm::EventSetup& iSetup) {
     for (unsigned int i=0; i<cH->size(); i++) {
       if (npf >= 9) continue;
 
-      epf[npf] = 9999.;
-      eRawpf[npf] = 9999.;
-      eoppf[npf] = 9999.;
-      etpf[npf] = 9999.;
-      etRawpf[npf] = 9999.;
-      etapf[npf] = 9999.;
-      phipf[npf] = 9999.;
-      sieiepf[npf] = 9999.;
-      ecalpf[npf] = 9999;
-      detapf[npf] = 9999.;
-      detaseedpf[npf] = 9999.;
-      dphipf[npf] = 9999.;
-      tkptpf[npf] = 9999.;
-      tketapf[npf] = 9999.;
-      tkphipf[npf] = 9999.;
-      hcalpf[npf] = 9999.;
-      hoepf[npf] = 9999.;
-      tkisopf[npf] = 9999.;
-      mishitspf[npf] = 9999.;
-      chi2pf[npf] = 9999.;
-      hitspf[npf] = 9999.;
+      epf[npf] = 999999.;
+      eRawpf[npf] = 999999.;
+      eoppf[npf] = 999999.;
+      etpf[npf] = 999999.;
+      etRawpf[npf] = 999999.;
+      etapf[npf] = 999999.;
+      phipf[npf] = 999999.;
+      sieiepf[npf] = 999999.;
+      ecalpf[npf] = 999999;
+      detapf[npf] = 999999.;
+      detaseedpf[npf] = 999999.;
+      dphipf[npf] = 999999.;
+      //tkptpf[npf] = 999999.;
+      //tketapf[npf] = 999999.;
+      //tkphipf[npf] = 999999.;
+      hcalpf[npf] = 999999.;
+      hoepf[npf] = 999999.;
+      tkisopf[npf] = 999999.;
+      mishitspf[npf] = 999999.;
+      chi2pf[npf] = 999999.;
+      hitspf[npf] = 999999.;
 
       reco::RecoEcalCandidateRef c(cH, i);
 
@@ -517,16 +528,21 @@ void plotDistr::analyze(const edm::Event& iEvt, const edm::EventSetup& iSetup) {
       if (ecalMapPF != 0) ecalpf[npf] = (*ecalMapPF)[c];
       if (hoeMapPF != 0) hoepf[npf] = (*hoeMapPF)[c];
       if (hcalMapPF != 0) hcalpf[npf] = (*hcalMapPF)[c];
-      if (detaMapPF != 0) detapf[npf] = ((*detaMapPF)[c]);
-      if (detaSeedMapPF != 0) detaseedpf[npf] = ((*detaSeedMapPF)[c]);
-      if (dphiMapPF != 0) dphipf[npf] = fabs((*dphiMapPF)[c]);
-      if (eopMapPF != 0) eoppf[npf] = fabs((*eopMapPF)[c]);
+      if (detaMapPF != 0) detapf[npf] = (*detaMapPF)[c];
+      if (detaseedMapPF != 0) detaseedpf[npf] = (*detaseedMapPF)[c];
+      if (dphiMapPF != 0) dphipf[npf] = (*dphiMapPF)[c];
+      if (eopMapPF != 0) eoppf[npf] = (*eopMapPF)[c];
       if (mishitsMapPF != 0) mishitspf[npf] = (*mishitsMapPF)[c];
       if (hitsMapPF != 0) hitspf[npf] = (*hitsMapPF)[c];
       if (chi2MapPF != 0) chi2pf[npf] = (*chi2MapPF)[c];
-      if (tkisoMapPF != 0) tkisopf[npf] = fabs((*tkisoMapPF)[c]);
-	
-      //std::cout << "plotHLT: " << etpf[npf] << " " << etapf[npf] << " " << phipf[npf] << std::endl;
+      if (tkisoMapPF != 0) tkisopf[npf] = (*tkisoMapPF)[c];
+
+      if (debug) {
+        std::cout << "HLT obj e: " << epf[npf] << " et: " << etpf[npf] << " eta: " << etapf[npf] << " phi: " << phipf[npf] << std::endl;
+        std::cout << "       sie: " << sieiepf[npf] << " hoe: " << hoepf[npf]/epf[npf] << " ecc: " << ecalpf[npf]/etpf[npf] << std::endl;
+        std::cout << "       hcc: " << hcalpf[npf]/etpf[npf] << " eop: " << eoppf[npf] << " chi: " << chi2pf[npf] << std::endl;
+        std::cout << "       mih: " << mishitspf[npf] << " des: " << detaseedpf[npf] << " dph: " << dphipf[npf] << " tki: " << tkisopf[npf]/etpf[npf] << std::endl;
+      }
 
       npf++;
 
@@ -534,9 +550,11 @@ void plotDistr::analyze(const edm::Event& iEvt, const edm::EventSetup& iSetup) {
   }
 
   t->Fill();
-  //std::cout << std::endl;
-  //std::cout << " +++++++ --- +++++++" << std::endl;
-  //std::cout << std::endl;
+  evtAcc = (accPath == 1) ? "passed" : "failed";
+  if (debug && npf != 0) {
+  std::cout << "+++++++ " << "Event " << evtAcc << " the path!" << " +++++++" << std::endl;
+  std::cout << std::endl;
+  }
 
 }
  
@@ -553,56 +571,56 @@ void plotDistr::beginJob() {
   t->Branch("rho",  &rho, "rho/F");
   
   t->Branch("npf",  &npf, "npf/I");
-  t->Branch("epf", &epf, "epf[npf]/F");
-  t->Branch("eRawpf", &eRawpf, "eRawpf[npf]/F");
-  t->Branch("etpf", &etpf, "etpf[npf]/F");
-  t->Branch("etRawpf", &etRawpf, "etRawpf[npf]/F");
-  t->Branch("etapf", &etapf, "etapf[npf]/F");
-  t->Branch("phipf", &phipf, "phipf[npf]/F");
-  t->Branch("sieiepf", &sieiepf, "sieiepf[npf]/F");
-  t->Branch("ecalpf", &ecalpf, "ecalpf[npf]/F");
-  t->Branch("dphipf", &dphipf, "dphipf[npf]/F");
-  t->Branch("detapf", &detapf, "detapf[npf]/F");
-  t->Branch("detaseedpf", &detaseedpf, "detaseedpf[npf]/F");
-  t->Branch("tkptpf",  &tkptpf, "tkptpf[npf]/F");
-  t->Branch("tketapf", &tketapf, "tketapf[npf]/F");
-  t->Branch("tkphipf", &tkphipf, "tkphipf[npf]/F");
-  t->Branch("hoepf",   &hoepf, "hoepf[npf]/F");
-  t->Branch("hcalpf",   &hcalpf, "hcalpf[npf]/F");
-  t->Branch("tkisopf",   &tkisopf, "tkisopf[npf]/F");
-  t->Branch("eoppf", &eoppf, "eoppf[npf]/F");
-  t->Branch("chi2pf", &chi2pf, "chi2pf[npf]/F");
-  t->Branch("mishitspf", &mishitspf, "mishitspf[npf]/I");
-  t->Branch("hitspf", &hitspf, "hitspf[npf]/I");
+  t->Branch("epf", epf, "epf[npf]/F");
+  t->Branch("eRawpf", eRawpf, "eRawpf[npf]/F");
+  t->Branch("etpf", etpf, "etpf[npf]/F");
+  t->Branch("etRawpf", etRawpf, "etRawpf[npf]/F");
+  t->Branch("etapf", etapf, "etapf[npf]/F");
+  t->Branch("phipf", phipf, "phipf[npf]/F");
+  t->Branch("sieiepf", sieiepf, "sieiepf[npf]/F");
+  t->Branch("ecalpf", ecalpf, "ecalpf[npf]/F");
+  t->Branch("dphipf", dphipf, "dphipf[npf]/F");
+  t->Branch("detapf", detapf, "detapf[npf]/F");
+  t->Branch("detaseedpf", detaseedpf, "detaseedpf[npf]/F");
+  //t->Branch("tkptpf",  tkptpf, "tkptpf[npf]/F");
+  //t->Branch("tketapf", tketapf, "tketapf[npf]/F");
+  //t->Branch("tkphipf", tkphipf, "tkphipf[npf]/F");
+  t->Branch("hoepf",   hoepf, "hoepf[npf]/F");
+  t->Branch("hcalpf",   hcalpf, "hcalpf[npf]/F");
+  t->Branch("tkisopf",   tkisopf, "tkisopf[npf]/F");
+  t->Branch("eoppf", eoppf, "eoppf[npf]/F");
+  t->Branch("chi2pf", chi2pf, "chi2pf[npf]/F");
+  t->Branch("mishitspf", mishitspf, "mishitspf[npf]/I");
+  t->Branch("hitspf", hitspf, "hitspf[npf]/I");
 
   if (saveReco) {
     t->Branch("reco_n",   &reco_n,   "reco_n/I");
-    t->Branch("reco_e",  &reco_e,  "reco_e[reco_n]/F");
-    t->Branch("reco_et",  &reco_et,  "reco_et[reco_n]/F");
-    t->Branch("reco_eRaw",  &reco_eRaw,  "reco_eRaw[reco_n]/F");
-    t->Branch("reco_etRaw",  &reco_etRaw,  "reco_etRaw[reco_n]/F");
-    t->Branch("reco_pt",  &reco_pt,  "reco_pt[reco_n]/F");
-    t->Branch("reco_eta", &reco_eta, "reco_eta[reco_n]/F");
-    t->Branch("reco_phi", &reco_phi, "reco_phi[reco_n]/F");
-    t->Branch("reco_sieie",  &reco_sieie,  "reco_sieie[reco_n]/F");
-    t->Branch("reco_hoe", &reco_hoe, "reco_hoe[reco_n]/F");
-    t->Branch("reco_ecal", &reco_ecal, "reco_ecal[reco_n]/F");
-    t->Branch("reco_hcal",  &reco_hcal,  "reco_hcal[reco_n]/F");
-    t->Branch("reco_eop", &reco_eop, "reco_eop[reco_n]/F");
-    t->Branch("reco_mishits", &reco_mishits, "reco_mishits[reco_n]/I");
-    t->Branch("reco_deta",  &reco_deta,  "reco_deta[reco_n]/F");
-    t->Branch("reco_detaseed",  &reco_detaseed,  "reco_detaseed[reco_n]/F");
-    t->Branch("reco_dphi", &reco_dphi, "reco_dphi[reco_n]/F");
-    t->Branch("reco_chi2", &reco_chi2, "reco_chi2[reco_n]/F");
-    t->Branch("reco_tkiso", &reco_tkiso, "reco_tkiso[reco_n]/F");
+    t->Branch("reco_e",  reco_e,  "reco_e[reco_n]/F");
+    t->Branch("reco_et",  reco_et,  "reco_et[reco_n]/F");
+    t->Branch("reco_eRaw",  reco_eRaw,  "reco_eRaw[reco_n]/F");
+    t->Branch("reco_etRaw",  reco_etRaw,  "reco_etRaw[reco_n]/F");
+    t->Branch("reco_pt",  reco_pt,  "reco_pt[reco_n]/F");
+    t->Branch("reco_eta", reco_eta, "reco_eta[reco_n]/F");
+    t->Branch("reco_phi", reco_phi, "reco_phi[reco_n]/F");
+    t->Branch("reco_sieie",  reco_sieie,  "reco_sieie[reco_n]/F");
+    t->Branch("reco_hoe", reco_hoe, "reco_hoe[reco_n]/F");
+    t->Branch("reco_ecal", reco_ecal, "reco_ecal[reco_n]/F");
+    t->Branch("reco_hcal",  reco_hcal,  "reco_hcal[reco_n]/F");
+    t->Branch("reco_eop", reco_eop, "reco_eop[reco_n]/F");
+    t->Branch("reco_mishits", reco_mishits, "reco_mishits[reco_n]/I");
+    t->Branch("reco_deta",  reco_deta,  "reco_deta[reco_n]/F");
+    t->Branch("reco_detaseed",  reco_detaseed,  "reco_detaseed[reco_n]/F");
+    t->Branch("reco_dphi", reco_dphi, "reco_dphi[reco_n]/F");
+    t->Branch("reco_chi2", reco_chi2, "reco_chi2[reco_n]/F");
+    t->Branch("reco_tkiso", reco_tkiso, "reco_tkiso[reco_n]/F");
   }
 
   if (!isData) {
     t->Branch("gevt_wgt", &gevt_wgt, "gevt_wgt/F");
     t->Branch("gpn", &gp_n, "gpn/I");
-    t->Branch("gppt", &gp_pt, "gppt[gpn]/F");
-    t->Branch("gpeta", &gp_eta, "gpeta[gpn]/F");
-    t->Branch("gpphi", &gp_phi, "gpphi[gpn]/F");
+    t->Branch("gppt", gp_pt, "gppt[gpn]/F");
+    t->Branch("gpeta", gp_eta, "gpeta[gpn]/F");
+    t->Branch("gpphi", gp_phi, "gpphi[gpn]/F");
     t-> Branch("nBX", &nBX, "nBX/I");
     t-> Branch("BX", BX, "BX[nBX]/I");
     t-> Branch("nPUtrue", &nPUtrue, "nPUtrue/I");
