@@ -9,15 +9,16 @@
 //
 //
 
-// Jul 23 2015: inclusion of RECO quantities (on RECO/AOD linked with RAW)
+// Jul 23 2015: Inclusion of RECO quantities (on RECO/AOD linked with RAW)
 // Aug 07 2015: dEtaSeed and other parameters
-// Dec 15 2015: updated to use getByToken for 80X
-// Jan 14 2016: now event metadata is stored too
+// Dec 15 2015: Updated to use getByToken for 80X
+// Jan 14 2016: Event metadata is stored too
 // Feb 03 2016: Reverting back to hltPixelVertices for nVtx
 // Mar 07 2016: MC-only PU information and updated genParticle info
 // Mar 25 2016: Gen event weight
-// Jun 28 2016: Remove the abs of GSF vars TO BE CHECKED/PROPAGATED DOWNSTREAM
+// Jun 28 2016: Remove the abs of GSF vars
 // Jun 28 2016: Defaults moved to 999999. to be compatible with var producers
+// Jul 21 2016: Append "mc_" to MC-only nBX, nPU info, updated event metadata
 // TODO float -> double migration; TO BE PROPAGATED DOWNSTREAM
 
 #include <memory>
@@ -142,8 +143,8 @@ private:
   TTree* t;
   
   Float_t rho;
-  Int_t nRun, nEvt, nLumi, accPath;
-  Int_t npf, gp_n, reco_n;
+  Int_t nRun, nEvt, nLumi, nBX, nOrb, nSto, accPath;
+  Int_t npf, nVtx, gp_n, reco_n;
   Float_t epf[10];
   Float_t eRawpf[10];
   Float_t eoppf[10];  
@@ -169,11 +170,6 @@ private:
   Int_t mishitspf[10];
   Int_t hitspf[10];
 
-  Float_t gevt_wgt;
-  Float_t gp_pt[10];
-  Float_t gp_eta[10];
-  Float_t gp_phi[10];
-
   Float_t reco_e[10];
   Float_t reco_et[10];
   Float_t reco_eRaw[10];
@@ -193,11 +189,15 @@ private:
   Float_t reco_chi2[10];
   Float_t reco_tkiso[10];
 
-  Int_t nVtx;
-  Int_t nBX;
-  Int_t BX[100];
-  Int_t nPUtrue;
-  Int_t nPUobs[100];
+  Float_t gevt_wgt;
+  Float_t gp_pt[10];
+  Float_t gp_eta[10];
+  Float_t gp_phi[10];
+
+  Int_t mc_nBX;
+  Int_t mc_BX[100];
+  Int_t mc_nPUtrue;
+  Int_t mc_nPUobs[100];
 
   bool isData;
   bool saveReco;
@@ -287,11 +287,15 @@ void plotDistr::mcTruth(edm::Handle<reco::GenParticleCollection> gpH) {
 
 void plotDistr::analyze(const edm::Event& iEvt, const edm::EventSetup& iSetup) {
 
-  debug = true;
+  //isData = iEvt.eventAuxiliary().isRealData(); // causes segfault ?_?
+  debug = false;
 
   nRun = iEvt.eventAuxiliary().run();
   nEvt = iEvt.eventAuxiliary().event();
   nLumi = iEvt.eventAuxiliary().luminosityBlock();
+  nBX = iEvt.eventAuxiliary().bunchCrossing();
+  nOrb = iEvt.eventAuxiliary().orbitNumber();
+  nSto = iEvt.eventAuxiliary().storeNumber();
 
   if (debug)
     std::cout << "Processing event " << nEvt << " in run / lumi " << nRun << " / " << nLumi << std::endl; 
@@ -313,23 +317,22 @@ void plotDistr::analyze(const edm::Event& iEvt, const edm::EventSetup& iSetup) {
   edm::Handle<GenEventInfoProduct> gEvtH;
   edm::Handle<std::vector<PileupSummaryInfo> > puH;
 
-  nBX = 0;
+  mc_nBX = 0;
   gevt_wgt = 0.;
   if (!isData) {
-
     iEvt.getByToken(genToken, gpH);
     iEvt.getByToken(genEvtToken, gEvtH);
     mcTruth(gpH);
     gevt_wgt = gEvtH->weight();
 
     iEvt.getByToken(puToken, puH);
-    nPUtrue = puH->begin()->getTrueNumInteractions();
+    mc_nPUtrue = puH->begin()->getTrueNumInteractions();
     std::vector<PileupSummaryInfo>::const_iterator pu;
 
     for(pu = puH->begin(); pu != puH->end(); ++pu) {
-      BX[nBX]      = pu->getBunchCrossing();
-      nPUobs[nBX]  = pu->getPU_NumInteractions();
-      nBX++;
+      mc_BX[mc_nBX]      = pu->getBunchCrossing();
+      mc_nPUobs[mc_nBX]  = pu->getPU_NumInteractions();
+      mc_nBX++;
     }
   }
 
@@ -565,6 +568,9 @@ void plotDistr::beginJob() {
   t->Branch("nRun", &nRun, "nRun/I");
   t->Branch("nEvt", &nEvt, "nEvt/I");
   t->Branch("nLumi", &nLumi, "nLumi/I");
+  t->Branch("nBX", &nBX, "nBX/I");
+  t->Branch("nOrb", &nOrb, "nOrb/I");
+  t->Branch("nSto", &nSto, "nSto/I");
   
   t->Branch("accPath", &accPath, "accPath/I");
   t->Branch("nVtx", &nVtx, "nVtx/I");
@@ -621,10 +627,10 @@ void plotDistr::beginJob() {
     t->Branch("gppt", gp_pt, "gppt[gpn]/F");
     t->Branch("gpeta", gp_eta, "gpeta[gpn]/F");
     t->Branch("gpphi", gp_phi, "gpphi[gpn]/F");
-    t-> Branch("nBX", &nBX, "nBX/I");
-    t-> Branch("BX", BX, "BX[nBX]/I");
-    t-> Branch("nPUtrue", &nPUtrue, "nPUtrue/I");
-    t-> Branch("nPUobs", nPUobs, "nPUobs[nBX]/I");
+    t-> Branch("mc_nBX", &mc_nBX, "mc_nBX/I");
+    t-> Branch("mc_BX", mc_BX, "mc_BX[nBX]/I");
+    t-> Branch("mc_nPUtrue", &mc_nPUtrue, "mc_nPUtrue/I");
+    t-> Branch("mc_nPUobs", mc_nPUobs, "mc_nPUobs[nBX]/I");
   }
 }
 
