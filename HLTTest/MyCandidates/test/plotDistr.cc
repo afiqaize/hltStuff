@@ -9,17 +9,17 @@
 //
 //
 
-// Jul 23 2015: Inclusion of RECO quantities (on RECO/AOD linked with RAW)
-// Aug 07 2015: dEtaSeed and other parameters
-// Dec 15 2015: Updated to use getByToken for 80X
-// Jan 14 2016: Event metadata is stored too
-// Feb 03 2016: Reverting back to hltPixelVertices for nVtx
-// Mar 07 2016: MC-only PU information and updated genParticle info
-// Mar 25 2016: Gen event weight
-// Jun 28 2016: Remove the abs of GSF vars
-// Jun 28 2016: Defaults moved to 999999. to be compatible with var producers
-// Jul 21 2016: Append "mc_" to MC-only nBX, nPU info, updated event metadata
-// TODO float -> double migration; TO BE PROPAGATED DOWNSTREAM
+// 23 07 2015: Inclusion of RECO quantities (on RECO/AOD linked with RAW)
+// 07 08 2015: dEtaSeed and other parameters
+// 15 12 2015: Updated to use getByToken for 80X
+// 14 01 2016: Event metadata is stored too
+// 03 02 2016: Reverting back to hltPixelVertices for nVtx
+// 07 03 2016: MC-only PU information and updated genParticle info
+// 25 03 2016: Gen event weight
+// 28 06 2016: Remove the abs of GSF vars
+// 28 06 2016: Defaults moved to 999999. to be compatible with var producers
+// 21 07 2016: Append "mc_" to MC-only nBX, nPU info, updated event metadata
+// 13 04 2017: Added HLT Ecal recHits chi2 histograms (to be tested)
 
 #include <memory>
 
@@ -51,6 +51,15 @@
 #include "RecoEgamma/EgammaIsolationAlgos/interface/ElectronTkIsolation.h"
 #include "RecoEgamma/EgammaIsolationAlgos/interface/EgammaRecHitIsolation.h"
 #include "RecoLocalCalo/EcalRecAlgos/interface/EcalSeverityLevelAlgoRcd.h"
+#include "DataFormats/EcalDetId/interface/EcalSubdetector.h"
+
+#include "RecoEcal/EgammaCoreTools/interface/EcalClusterTools.h"
+
+#include "Geometry/CaloGeometry/interface/CaloGeometry.h"
+#include "Geometry/CaloTopology/interface/CaloTopology.h"
+
+#include "Geometry/Records/interface/CaloGeometryRecord.h"
+#include "Geometry/CaloEventSetup/interface/CaloTopologyRecord.h"
 
 #include "DataFormats/VertexReco/interface/Vertex.h"
 #include "DataFormats/VertexReco/interface/VertexFwd.h"
@@ -60,8 +69,6 @@
 #include "RecoLocalCalo/HcalRecAlgos/interface/HcalSeverityLevelComputerRcd.h"
 #include "CondFormats/HcalObjects/interface/HcalChannelQuality.h"
 #include "CondFormats/DataRecord/interface/HcalChannelQualityRcd.h"
-
-#include "Geometry/Records/interface/CaloGeometryRecord.h"
 
 #include "DataFormats/TrackReco/interface/Track.h"
 #include "DataFormats/GsfTrackReco/interface/GsfTrack.h"
@@ -86,6 +93,8 @@
 #include "TLorentzVector.h"
 #include "TFile.h"
 #include "TTree.h"
+#include "TH1F.h"
+#include "TH2F.h"
 
 #include <string>
 #include <iostream>
@@ -109,34 +118,37 @@ private:
   HLTConfigProvider hltConfig_; 
   std::vector<std::string> pathNames_;
 
-  edm::EDGetTokenT<edm::TriggerResults> trgResToken;
+  edm::EDGetTokenT<EcalRecHitCollection> hltEBHitTkn;
+  edm::EDGetTokenT<EcalRecHitCollection> hltEEHitTkn;
 
-  edm::EDGetTokenT<reco::GenParticleCollection> genToken;
-  edm::EDGetTokenT<GenEventInfoProduct> genEvtToken;
-  edm::EDGetTokenT<reco::VertexCollection> vtxToken;
-  edm::EDGetTokenT< std::vector<PileupSummaryInfo> > puToken;
+  edm::EDGetTokenT<edm::TriggerResults> trgResTkn;
 
-  edm::EDGetTokenT<std::vector<reco::GsfElectron> > elToken;
-  edm::EDGetTokenT<std::vector<reco::Electron> > eToken;
-  edm::EDGetTokenT<std::vector<reco::RecoEcalCandidate> > cToken;
+  edm::EDGetTokenT<reco::GenParticleCollection> genTkn;
+  edm::EDGetTokenT<GenEventInfoProduct> genEvtTkn;
+  edm::EDGetTokenT<reco::VertexCollection> vtxTkn;
+  edm::EDGetTokenT< std::vector<PileupSummaryInfo> > puTkn;
 
-  edm::EDGetTokenT<edm::ValueMap<float> > recoEcalToken;
-  edm::EDGetTokenT<edm::ValueMap<float> > recoHcalToken;
+  edm::EDGetTokenT<std::vector<reco::GsfElectron> > elTkn;
+  edm::EDGetTokenT<std::vector<reco::Electron> > eTkn;
+  edm::EDGetTokenT<std::vector<reco::RecoEcalCandidate> > cTkn;
 
-  edm::EDGetTokenT<reco::RecoEcalCandidateIsolationMap> sieieToken;
-  edm::EDGetTokenT<reco::RecoEcalCandidateIsolationMap> ecalToken;
-  edm::EDGetTokenT<reco::RecoEcalCandidateIsolationMap> hcalToken;
-  edm::EDGetTokenT<reco::RecoEcalCandidateIsolationMap> hoeToken;
-  edm::EDGetTokenT<reco::RecoEcalCandidateIsolationMap> tkisoToken;
-  edm::EDGetTokenT<reco::RecoEcalCandidateIsolationMap> detaToken;
-  edm::EDGetTokenT<reco::RecoEcalCandidateIsolationMap> detaseedToken;
-  edm::EDGetTokenT<reco::RecoEcalCandidateIsolationMap> dphiToken;
-  edm::EDGetTokenT<reco::RecoEcalCandidateIsolationMap> eopToken;
-  edm::EDGetTokenT<reco::RecoEcalCandidateIsolationMap> mishitsToken;
-  edm::EDGetTokenT<reco::RecoEcalCandidateIsolationMap> chi2Token;
-  edm::EDGetTokenT<reco::RecoEcalCandidateIsolationMap> hitsToken;
+  edm::EDGetTokenT<edm::ValueMap<float> > recoEcalTkn;
+  edm::EDGetTokenT<edm::ValueMap<float> > recoHcalTkn;
 
-  edm::EDGetTokenT<double> rhoToken;
+  edm::EDGetTokenT<reco::RecoEcalCandidateIsolationMap> sieieTkn;
+  edm::EDGetTokenT<reco::RecoEcalCandidateIsolationMap> ecalTkn;
+  edm::EDGetTokenT<reco::RecoEcalCandidateIsolationMap> hcalTkn;
+  edm::EDGetTokenT<reco::RecoEcalCandidateIsolationMap> hoeTkn;
+  edm::EDGetTokenT<reco::RecoEcalCandidateIsolationMap> tkisoTkn;
+  edm::EDGetTokenT<reco::RecoEcalCandidateIsolationMap> detaTkn;
+  edm::EDGetTokenT<reco::RecoEcalCandidateIsolationMap> detaseedTkn;
+  edm::EDGetTokenT<reco::RecoEcalCandidateIsolationMap> dphiTkn;
+  edm::EDGetTokenT<reco::RecoEcalCandidateIsolationMap> eopTkn;
+  edm::EDGetTokenT<reco::RecoEcalCandidateIsolationMap> mishitsTkn;
+  edm::EDGetTokenT<reco::RecoEcalCandidateIsolationMap> chi2Tkn;
+  edm::EDGetTokenT<reco::RecoEcalCandidateIsolationMap> hitsTkn;
+
+  edm::EDGetTokenT<double> rhoTkn;
 
   std::string outputFileName;
   TFile* f;
@@ -203,8 +215,9 @@ private:
   bool saveReco;
 
   bool debug;
-  string evtAcc;
+  std::string evtAcc;
 
+  TH1F *hitChi2EB, *hitChi2EE;
 };
 
 void plotDistr::beginRun(const edm::Run& run,const edm::EventSetup& setup) {
@@ -222,33 +235,39 @@ plotDistr::plotDistr(const edm::ParameterSet& iParSet) {
   pathNames_      = iParSet.getParameter<std::vector<std::string> >("trgSelection");
   trigResultsTag_ = iParSet.getParameter<edm::InputTag>("trgResults");
 
-  trgResToken     = consumes<edm::TriggerResults>(trigResultsTag_);
-  genToken        = consumes<reco::GenParticleCollection>(edm::InputTag("genParticles"));
-  genEvtToken     = consumes<GenEventInfoProduct>(edm::InputTag("generator"));
-  vtxToken        = consumes<reco::VertexCollection>(edm::InputTag("hltPixelVertices"));
-  puToken         = consumes<std::vector<PileupSummaryInfo> >(edm::InputTag("addPileupInfo"));
+  hltEBHitTkn   = consumes<EcalRecHitCollection>(edm::InputTag("hltEcalRecHit:EcalRecHitsEB"));
+  hltEEHitTkn   = consumes<EcalRecHitCollection>(edm::InputTag("hltEcalRecHit:EcalRecHitsEE"));
 
-  elToken         = consumes<std::vector<reco::GsfElectron> >(edm::InputTag("gedGsfElectrons"));
-  //eToken        = consumes<std::vector<reco::Electron> >(edm::InputTag("hltEgammaCandidates"));
-  cToken          = consumes<std::vector<reco::RecoEcalCandidate> >(edm::InputTag("hltEgammaCandidates"));
+  trgResTkn     = consumes<edm::TriggerResults>(trigResultsTag_);
+  genTkn        = consumes<reco::GenParticleCollection>(edm::InputTag("genParticles"));
+  genEvtTkn     = consumes<GenEventInfoProduct>(edm::InputTag("generator"));
+  vtxTkn        = consumes<reco::VertexCollection>(edm::InputTag("hltPixelVertices"));
+  puTkn         = consumes<std::vector<PileupSummaryInfo> >(edm::InputTag("addPileupInfo"));
 
-  recoEcalToken   = consumes<edm::ValueMap<float> >(edm::InputTag("electronEcalPFClusterIsolationProducer"));
-  recoHcalToken   = consumes<edm::ValueMap<float> >(edm::InputTag("electronHcalPFClusterIsolationProducer"));
+  elTkn         = consumes<std::vector<reco::GsfElectron> >(edm::InputTag("gedGsfElectrons"));
+  //eTkn        = consumes<std::vector<reco::Electron> >(edm::InputTag("hltEgammaCandidates"));
+  cTkn          = consumes<std::vector<reco::RecoEcalCandidate> >(edm::InputTag("hltEgammaCandidates"));
 
-  sieieToken      = consumes<reco::RecoEcalCandidateIsolationMap>(edm::InputTag("hltEgammaClusterShape:sigmaIEtaIEta5x5"));
-  ecalToken       = consumes<reco::RecoEcalCandidateIsolationMap>(edm::InputTag("hltEgammaEcalPFClusterIso"));
-  hcalToken       = consumes<reco::RecoEcalCandidateIsolationMap>(edm::InputTag("hltEgammaHcalPFClusterIso"));
-  hoeToken        = consumes<reco::RecoEcalCandidateIsolationMap>(edm::InputTag("hltEgammaHoverE"));
-  tkisoToken      = consumes<reco::RecoEcalCandidateIsolationMap>(edm::InputTag("hltEgammaEleGsfTrackIso"));
-  detaToken       = consumes<reco::RecoEcalCandidateIsolationMap>(edm::InputTag("hltEgammaGsfTrackVars:Deta"));
-  detaseedToken   = consumes<reco::RecoEcalCandidateIsolationMap>(edm::InputTag("hltEgammaGsfTrackVars:DetaSeed"));
-  dphiToken       = consumes<reco::RecoEcalCandidateIsolationMap>(edm::InputTag("hltEgammaGsfTrackVars:Dphi"));
-  eopToken        = consumes<reco::RecoEcalCandidateIsolationMap>(edm::InputTag("hltEgammaGsfTrackVars:OneOESuperMinusOneOP"));
-  chi2Token       = consumes<reco::RecoEcalCandidateIsolationMap>(edm::InputTag("hltEgammaGsfTrackVars:Chi2"));
-  mishitsToken    = consumes<reco::RecoEcalCandidateIsolationMap>(edm::InputTag("hltEgammaGsfTrackVars:MissingHits"));
-  hitsToken       = consumes<reco::RecoEcalCandidateIsolationMap>(edm::InputTag("hltEgammaGsfTrackVars:ValidHits"));
+  recoEcalTkn   = consumes<edm::ValueMap<float> >(edm::InputTag("electronEcalPFClusterIsolationProducer"));
+  recoHcalTkn   = consumes<edm::ValueMap<float> >(edm::InputTag("electronHcalPFClusterIsolationProducer"));
 
-  rhoToken        = consumes<double>(edm::InputTag("hltFixedGridRhoFastjetAllCaloForMuons"));
+  sieieTkn      = consumes<reco::RecoEcalCandidateIsolationMap>(edm::InputTag("hltEgammaClusterShape:sigmaIEtaIEta5x5"));
+  ecalTkn       = consumes<reco::RecoEcalCandidateIsolationMap>(edm::InputTag("hltEgammaEcalPFClusterIso"));
+  hcalTkn       = consumes<reco::RecoEcalCandidateIsolationMap>(edm::InputTag("hltEgammaHcalPFClusterIso"));
+  hoeTkn        = consumes<reco::RecoEcalCandidateIsolationMap>(edm::InputTag("hltEgammaHoverERhoCorr"));
+  tkisoTkn      = consumes<reco::RecoEcalCandidateIsolationMap>(edm::InputTag("hltEgammaEleGsfTrackIso"));
+  detaTkn       = consumes<reco::RecoEcalCandidateIsolationMap>(edm::InputTag("hltEgammaGsfTrackVars:Deta"));
+  detaseedTkn   = consumes<reco::RecoEcalCandidateIsolationMap>(edm::InputTag("hltEgammaGsfTrackVars:DetaSeed"));
+  dphiTkn       = consumes<reco::RecoEcalCandidateIsolationMap>(edm::InputTag("hltEgammaGsfTrackVars:Dphi"));
+  eopTkn        = consumes<reco::RecoEcalCandidateIsolationMap>(edm::InputTag("hltEgammaGsfTrackVars:OneOESuperMinusOneOP"));
+  chi2Tkn       = consumes<reco::RecoEcalCandidateIsolationMap>(edm::InputTag("hltEgammaGsfTrackVars:Chi2"));
+  mishitsTkn    = consumes<reco::RecoEcalCandidateIsolationMap>(edm::InputTag("hltEgammaGsfTrackVars:MissingHits"));
+  hitsTkn       = consumes<reco::RecoEcalCandidateIsolationMap>(edm::InputTag("hltEgammaGsfTrackVars:ValidHits"));
+
+  rhoTkn        = consumes<double>(edm::InputTag("hltFixedGridRhoFastjetAllCaloForMuons"));
+
+  hitChi2EB = new TH1F("hitChi2EB", "", 1000, 0., 1000.);
+  hitChi2EE = new TH1F("hitChi2EE", "", 1000, 0., 1000.);
 }
 
 plotDistr::~plotDistr() 
@@ -301,7 +320,7 @@ void plotDistr::analyze(const edm::Event& iEvt, const edm::EventSetup& iSetup) {
     std::cout << "Processing event " << nEvt << " in run / lumi " << nRun << " / " << nLumi << std::endl; 
 
   edm::Handle<edm::TriggerResults> trgResH;
-  iEvt.getByToken(trgResToken, trgResH);
+  iEvt.getByToken(trgResTkn, trgResH);
 
   const edm::TriggerResults& trgResults = *trgResH;
   const edm::TriggerNames& trgNames = iEvt.triggerNames(trgResults);
@@ -320,12 +339,12 @@ void plotDistr::analyze(const edm::Event& iEvt, const edm::EventSetup& iSetup) {
   mc_nBX = 0;
   gevt_wgt = 0.;
   if (!isData) {
-    iEvt.getByToken(genToken, gpH);
-    iEvt.getByToken(genEvtToken, gEvtH);
+    iEvt.getByToken(genTkn, gpH);
+    iEvt.getByToken(genEvtTkn, gEvtH);
     mcTruth(gpH);
     gevt_wgt = gEvtH->weight();
 
-    iEvt.getByToken(puToken, puH);
+    iEvt.getByToken(puTkn, puH);
     mc_nPUtrue = puH->begin()->getTrueNumInteractions();
     std::vector<PileupSummaryInfo>::const_iterator pu;
 
@@ -339,13 +358,13 @@ void plotDistr::analyze(const edm::Event& iEvt, const edm::EventSetup& iSetup) {
   if (saveReco) {
 
     edm::Handle<std::vector<reco::GsfElectron> > elH;
-    iEvt.getByToken(elToken, elH);
+    iEvt.getByToken(elTkn, elH);
 
     edm::Handle<edm::ValueMap<float> > recoEcalMap;
-    iEvt.getByToken(recoEcalToken, recoEcalMap);
+    iEvt.getByToken(recoEcalTkn, recoEcalMap);
 
     edm::Handle<edm::ValueMap<float> > recoHcalMap;
-    iEvt.getByToken(recoHcalToken, recoHcalMap);
+    iEvt.getByToken(recoHcalTkn, recoHcalMap);
 
     reco_n = 0;
     for (unsigned int i=0; i<elH->size(); i++) {
@@ -398,6 +417,23 @@ void plotDistr::analyze(const edm::Event& iEvt, const edm::EventSetup& iSetup) {
     }
   }
 
+  edm::Handle<EcalRecHitCollection> hltEBHitH, hltEEHitH;
+  iEvt.getByToken(hltEBHitTkn, hltEBHitH);
+  if (!hltEBHitH.failedToGet()) {
+    for(size_t i = 0; i < hltEBHitH->size(); ++i) {
+      const EcalRecHitRef recHit(hltEBHitH, i);
+       hitChi2EB->Fill(recHit->chi2());
+    }
+  }
+
+  iEvt.getByToken(hltEEHitTkn, hltEEHitH);
+  if (!hltEEHitH.failedToGet()) {
+    for(size_t i = 0; i < hltEEHitH->size(); ++i) {
+      const EcalRecHitRef recHit(hltEEHitH, i);
+       hitChi2EE->Fill(recHit->chi2());
+    }
+  }
+
   edm::Handle<std::vector<reco::Electron> > eH;
   edm::Handle<std::vector<reco::RecoEcalCandidate> > cH;
   edm::Handle<reco::RecoEcalCandidateIsolationMap> sieieMapH;
@@ -414,7 +450,7 @@ void plotDistr::analyze(const edm::Event& iEvt, const edm::EventSetup& iSetup) {
   edm::Handle<reco::RecoEcalCandidateIsolationMap> hitsMapH;
 
   edm::Handle<reco::VertexCollection> vtxH;
-  iEvt.getByToken(vtxToken, vtxH);
+  iEvt.getByToken(vtxTkn, vtxH);
 
   if (!vtxH.failedToGet())
     nVtx = vtxH->size();
@@ -422,7 +458,7 @@ void plotDistr::analyze(const edm::Event& iEvt, const edm::EventSetup& iSetup) {
     nVtx = 0;
 
   edm::Handle<double> rhoH;
-  iEvt.getByToken(rhoToken, rhoH);
+  iEvt.getByToken(rhoTkn, rhoH);
 
   if (!rhoH.failedToGet())
     rho = *(rhoH.product());
@@ -430,66 +466,66 @@ void plotDistr::analyze(const edm::Event& iEvt, const edm::EventSetup& iSetup) {
     rho = 999999.;
 
   npf = 0;
-  iEvt.getByToken(cToken, cH);
+  iEvt.getByToken(cTkn, cH);
   if (!cH.failedToGet()) {
     
     const reco::RecoEcalCandidateIsolationMap* sieieMapPF = 0;
-    iEvt.getByToken(sieieToken, sieieMapH);
+    iEvt.getByToken(sieieTkn, sieieMapH);
     if (!sieieMapH.failedToGet())  
       sieieMapPF = sieieMapH.product();
       
     const reco::RecoEcalCandidateIsolationMap* ecalMapPF = 0;
-    iEvt.getByToken(ecalToken, ecalMapH);
+    iEvt.getByToken(ecalTkn, ecalMapH);
     if (!ecalMapH.failedToGet()) 
       ecalMapPF = ecalMapH.product(); 
       
     const reco::RecoEcalCandidateIsolationMap* hcalMapPF = 0;
-    iEvt.getByToken(hcalToken, hcalMapH);
+    iEvt.getByToken(hcalTkn, hcalMapH);
     if (!hcalMapH.failedToGet()) 
       hcalMapPF = hcalMapH.product(); 
       
     const reco::RecoEcalCandidateIsolationMap* hoeMapPF = 0;
-    iEvt.getByToken(hoeToken, hoeMapH);
+    iEvt.getByToken(hoeTkn, hoeMapH);
     if (!hoeMapH.failedToGet()) 
       hoeMapPF = hoeMapH.product(); 
       
     const reco::RecoEcalCandidateIsolationMap* tkisoMapPF = 0;
-    iEvt.getByToken(tkisoToken, tkisoMapH);
+    iEvt.getByToken(tkisoTkn, tkisoMapH);
     if (!tkisoMapH.failedToGet())
       tkisoMapPF = tkisoMapH.product();          
       
     const reco::RecoEcalCandidateIsolationMap* detaMapPF = 0;
-    iEvt.getByToken(detaToken, detaMapH);
+    iEvt.getByToken(detaTkn, detaMapH);
     if (!detaMapH.failedToGet())
       detaMapPF = detaMapH.product();
 
     const reco::RecoEcalCandidateIsolationMap* detaseedMapPF = 0;
-    iEvt.getByToken(detaseedToken, detaseedMapH);
+    iEvt.getByToken(detaseedTkn, detaseedMapH);
     if (!detaseedMapH.failedToGet())
       detaseedMapPF = detaseedMapH.product();
       
     const reco::RecoEcalCandidateIsolationMap* dphiMapPF = 0;
-    iEvt.getByToken(dphiToken, dphiMapH);
+    iEvt.getByToken(dphiTkn, dphiMapH);
     if (!dphiMapH.failedToGet()) 
       dphiMapPF = dphiMapH.product();
       
     const reco::RecoEcalCandidateIsolationMap* eopMapPF = 0;
-    iEvt.getByToken(eopToken, eopMapH);
+    iEvt.getByToken(eopTkn, eopMapH);
     if (!eopMapH.failedToGet()) 
       eopMapPF = eopMapH.product();
 
     const reco::RecoEcalCandidateIsolationMap* chi2MapPF = 0;
-    iEvt.getByToken(chi2Token, chi2MapH);
+    iEvt.getByToken(chi2Tkn, chi2MapH);
     if (!chi2MapH.failedToGet()) 
       chi2MapPF = chi2MapH.product();
 
     const reco::RecoEcalCandidateIsolationMap* mishitsMapPF = 0;
-    iEvt.getByToken(mishitsToken, mishitsMapH);
+    iEvt.getByToken(mishitsTkn, mishitsMapH);
     if (!mishitsMapH.failedToGet()) 
       mishitsMapPF = mishitsMapH.product();
 
     const reco::RecoEcalCandidateIsolationMap* hitsMapPF = 0;
-    iEvt.getByToken(hitsToken, hitsMapH);
+    iEvt.getByToken(hitsTkn, hitsMapH);
     if (!hitsMapH.failedToGet()) 
       hitsMapPF = hitsMapH.product();
       
@@ -637,6 +673,8 @@ void plotDistr::beginJob() {
 void plotDistr::endJob() {
   f->cd();
   t->Write();
+  hitChi2EB->Write();
+  hitChi2EE->Write();
   f->Close();
 }
 
