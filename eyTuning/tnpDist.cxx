@@ -1,5 +1,5 @@
-// For hlt comparisons: GT and whatever else
-// Usage: root -l -b tnpOn.cxx++
+// For drawing ID distributions from the TnP ntuple
+// Usage: root -l -b tnpDist.cxx++
 
 #include "TFile.h"
 #include "TChain.h"
@@ -7,29 +7,31 @@
 #include "TROOT.h"
 #include "TBufferFile.h"
 #include "TLorentzVector.h"
-#include "TF1.h"
 
 #include "hltWP.cxx"
 #include "/home/afiqaize/root53434/macros/tdrstyle.C"
 
-void tnpOn() {
-
+void tnpDist() {
    gROOT->Reset();
 
    setTDRStyle();
 
    // Everything to tinker with should be here
    std::string vName, outPre;
-   outPre = "";
+   outPre = "v_m5p2";
 
    // -------------------------------------------------- //
 
-   const int nH = 3;
+   const int nH = 7;
 
    std::pair <std::string, std::string> pairFileLeg[nH];
    pairFileLeg[0] = std::make_pair("m5p2_fastBDED", "Offline");
    pairFileLeg[1] = std::make_pair("m5p2_fastBDED", "EB 15 EE 10");
    pairFileLeg[2] = std::make_pair("m5p2_fastB1E1", "EB 1 EE 1");
+   pairFileLeg[3] = std::make_pair("m5p2_fastB2E2", "EB 2 EE 2");
+   pairFileLeg[4] = std::make_pair("m5p2_fastB5E5", "EB 5 EE 5");
+   pairFileLeg[5] = std::make_pair("m5p2_fastB7E7", "EB 7 EE 7");
+   pairFileLeg[6] = std::make_pair("m5p2_full", "No prefit");
 
    TH1::SetDefaultSumw2(true);
    TH1D *eta_b[nH], *eta_e[nH], *phi_b[nH], *phi_e[nH], *eet_b[nH], *eet_e[nH];
@@ -121,176 +123,208 @@ void tnpOn() {
    std::string const inDir = "/home/afiqaize/Downloads/HLT/dev/e_90x/ecalIso_160317/root/";
    std::string const fName = inDir + "../plot/" + outPre + "_";
 
-   bool isMC = false;
+   TChain *t1 = new TChain("tnpEleTrig/fitter_tree");
+   for (int iH = 1; iH < nH; iH++)
+     t1->Add((inDir + pairFileLeg[iH].first + ".root").c_str());
 
    int nRun;
-   t1->SetBranchAddress("nRun", &nRun);
+   t1->SetBranchAddress("run", &nRun);
    int nLumi;
-   t1->SetBranchAddress("nLumi", &nLumi);
+   t1->SetBranchAddress("lumi", &nLumi);
    int nEvt;
-   t1->SetBranchAddress("nEvt", &nEvt);
-   int nBX;
-   t1->SetBranchAddress("nBX", &nBX);
-   int nOrb;
-   t1->SetBranchAddress("nOrb", &nOrb);
-   int nSto;
-   t1->SetBranchAddress("nSto", &nSto);
-
-   int type;
-   t1->SetBranchAddress("itype", &type);
-   double weight;
-   t1->SetBranchAddress("weight", &weight);
-   double puWgt;
-   t1->SetBranchAddress("puWgt", &puWgt);
-   int nVtx;
-   t1->SetBranchAddress("nVtx", &nVtx);
+   t1->SetBranchAddress("event", &nEvt);
+   int nPV;
+   t1->SetBranchAddress("event_nPV", &nPV);
    double rho;
-   t1->SetBranchAddress("rho", &rho);
+   t1->SetBranchAddress("hlt_rho", &rho);
 
-   int pass[10];
-   t1->SetBranchAddress("passHLT", pass);
-   int genMatch[10];
-   t1->SetBranchAddress("genMatch", genMatch);
-   int n;
-   t1->SetBranchAddress("hlt_n", &n);
-   double et[10];
-   t1->SetBranchAddress("hlt_et", et);
-   double etr[10];
-   t1->SetBranchAddress("hlt_etr", etr);
-   double e[10];
-   t1->SetBranchAddress("hlt_e", e);
-   double er[10];
-   t1->SetBranchAddress("hlt_er", er);
-   double eta[10];
-   t1->SetBranchAddress("hlt_eta", eta);
-   double phi[10];
-   t1->SetBranchAddress("hlt_phi", phi);
-   double sie[10];
-   t1->SetBranchAddress("hlt_sie", sie);
-   double hoe[10];
-   t1->SetBranchAddress("hlt_hoe", hoe);
-   double eca[10];
-   t1->SetBranchAddress("hlt_eca", eca);
-   double hca[10];
-   t1->SetBranchAddress("hlt_hca", hca);
-   double ps2[10];
-   t1->SetBranchAddress("hlt_ps2", ps2);
-   double eop[10];
-   t1->SetBranchAddress("hlt_eop", eop);
-   double esp[10];
-   t1->SetBranchAddress("hlt_esp", esp);
-   double chi[10];
-   t1->SetBranchAddress("hlt_chi", chi);
-   double mih[10];
-   t1->SetBranchAddress("hlt_mih", mih);
-   double det[10];
-   t1->SetBranchAddress("hlt_det", det);
-   double des[10];
-   t1->SetBranchAddress("hlt_des", des);
-   double dph[10];
-   t1->SetBranchAddress("hlt_dph", dph);
-   double tks[10];
-   t1->SetBranchAddress("hlt_tks", tks);
+   int passTight;
+   t1->SetBranchAddress("passTight80X", &passTight);
+   int passHLT;
+   t1->SetBranchAddress("passHLT", &passHLT);
+   int passL1T;
+   t1->SetBranchAddress("passL1T", &passL1T);
+   int m60To120;
+   t1->SetBranchAddress("pair_mass60to120", &m60To120);
 
-   int mc_nBX, mc_nPUtrue, gp_n;
-   int mc_BX[100], mc_nPUobs[100];
-   double genWgt, gp_pt[10], gp_eta[10], gp_phi[10];
+   double hlt_et;
+   t1->SetBranchAddress("probe_hlt_et", &hlt_et);
+   double hlt_e;
+   t1->SetBranchAddress("probe_hlt_e", &hlt_e);
+   double hlt_eta;
+   t1->SetBranchAddress("probe_hlt_eta", &hlt_eta);
+   double hlt_phi;
+   t1->SetBranchAddress("probe_hlt_phi", &hlt_phi);
+   double hlt_sie;
+   t1->SetBranchAddress("probe_hlt_sieie", &hlt_sie);
+   double hlt_hoe;
+   t1->SetBranchAddress("probe_hlt_hoe", &hlt_hoe);
+   double hlt_eca;
+   t1->SetBranchAddress("probe_hlt_ecalIso", &hlt_eca);
+   double hlt_hca;
+   t1->SetBranchAddress("probe_hlt_hcalIso", &hlt_hca);
+   double hlt_eop;
+   t1->SetBranchAddress("probe_hlt_ooemoop", &hlt_eop);
+   double hlt_chi;
+   t1->SetBranchAddress("probe_hlt_chi2", &hlt_chi);
+   double hlt_mih;
+   t1->SetBranchAddress("probe_hlt_mHits", &hlt_mih);
+   double hlt_det;
+   t1->SetBranchAddress("probe_hlt_dEtaIn", &hlt_det);
+   double hlt_des;
+   t1->SetBranchAddress("probe_hlt_dEtaOut", &hlt_des);
+   double hlt_dph;
+   t1->SetBranchAddress("probe_hlt_dPhiIn", &hlt_dph);
+   double hlt_tks;
+   t1->SetBranchAddress("probe_hlt_trkIso", &hlt_tks);
 
-    if (isMC) {
-      t1->SetBranchAddress("genWgt", &genWgt);
-      t1->SetBranchAddress("gp_n", &gp_n);
-      t1->SetBranchAddress("gp_pt", gp_pt);
-      t1->SetBranchAddress("gp_eta", gp_eta);
-      t1->SetBranchAddress("gpphi", gp_phi);
-      t1->SetBranchAddress("mc_nBX", &mc_nBX);
-      t1->SetBranchAddress("mc_BX", mc_BX);
-      t1->SetBranchAddress("mc_nPUtrue", &mc_nPUtrue);
-      t1->SetBranchAddress("mc_nPUobs", mc_nPUobs);
-    }
+   double sc_et;
+   t1->SetBranchAddress("probe_sc_et", &sc_et);
+   double sc_e;
+   t1->SetBranchAddress("probe_sc_e", &sc_e);
+   double sc_eta;
+   t1->SetBranchAddress("probe_sc_eta", &sc_eta);
+   double sc_phi;
+   t1->SetBranchAddress("probe_sc_phi", &sc_phi);
+
+   double ele_et;
+   t1->SetBranchAddress("probe_ele_et", &ele_et);
+   double ele_e;
+   t1->SetBranchAddress("probe_ele_e", &ele_e);
+   double ele_eta;
+   t1->SetBranchAddress("probe_ele_eta", &ele_eta);
+   double ele_phi;
+   t1->SetBranchAddress("probe_ele_phi", &ele_phi);
+   double ele_sie;
+   t1->SetBranchAddress("probe_ele_sieie5x5", &ele_sie);
+   double ele_hoe;
+   t1->SetBranchAddress("probe_ele_hoe", &ele_hoe);
+   double ele_eca;
+   t1->SetBranchAddress("probe_ele_ecalIso", &ele_eca);
+   double ele_hca;
+   t1->SetBranchAddress("probe_ele_hcalIso", &ele_hca);
+   double ele_eop;
+   t1->SetBranchAddress("probe_ele_ooemoop", &ele_eop);
+   double ele_chi;
+   t1->SetBranchAddress("probe_ele_chi2", &ele_chi);
+   double ele_mih;
+   t1->SetBranchAddress("probe_ele_mHits", &ele_mih);
+   double ele_det;
+   t1->SetBranchAddress("probe_ele_dEtaIn", &ele_det);
+   double ele_des;
+   t1->SetBranchAddress("probe_ele_dEtaOut", &ele_des);
+   double ele_dph;
+   t1->SetBranchAddress("probe_ele_dPhiIn", &ele_dph);
+   double ele_tks;
+   t1->SetBranchAddress("probe_ele_trkIso", &ele_tks);
 
    // -------------------------------------------------- //
-   // The TnP version of efficiency checker
 
-   TLorentzVector p4Tag, p4Probe;
    double finWgt = 1.;
 
-   int nEvt0 = t1->GetEntries();
-   cout << "nEvt0 = " << nEvt0 << endl;
+   int nEnt = t1->GetEntries();
+   std::cout << "nEnt = " << nEnt << std::endl;
 
-   for (int evt0 = 0; evt0 < nEvt0; evt0++) {
+   for (int ent = 0; ent < nEnt; ent++) {
 
-     t1->GetEntry(evt0);
-     finWgt = puWgt * weight;
-     if (n < 2 or type != 1) continue;
+     t1->GetEntry(ent);
+     if (!passL1T) continue;
+     if (!m60To120) continue;
+     if (std::abs(sc_eta) > etaEE) continue;
 
-     for (int iTag = 0; iTag < n; iTag++) {
+     //if (!checkCand("", -1, rho,
+     //               hlt_e, hlt_et, hlt_eta, hlt_phi,
+     //               hlt_sie, hlt_hoe, hlt_eca, hlt_hca, hlt_eop,
+     //               hlt_chi, hlt_mih, hlt_des, hlt_dph, hlt_tks)) continue;
 
-       if (pass[iTag] != 1) continue;
-       //if (isMC and genMatch[iTag] != 1) continue;
-       if (et[iTag] < 25. or std::abs(eta[iTag]) > etaEE) continue;
+     std::string cFile(t1->GetCurrentFile()->GetName());
 
-       p4Tag.SetPtEtaPhiE(et[iTag], eta[iTag], phi[iTag], e[iTag]);
+     bool isFile[nH] = {false, false, false, false, false, false};
+     for (int iH = 1; iH < nH; iH++)
+       isFile[iH] = cFile.std::string::find(pairFileLeg[iH].first) != std::string::npos;
 
-       for (int iProbe = 0; iProbe < n; iProbe++) {
+     if (isFile[1]) {
+       eta_b[0]->Fill(sc_eta, finWgt);
+       eta_e[0]->Fill(sc_eta, finWgt);
+     }
 
-         if (iProbe == iTag) continue;
-         //if (isMC and genMatch[iProbe] != 1) continue;
-         if (et[iProbe] < 25. or std::abs(eta[iProbe]) > etaEE) continue;
+     for (int iH = 1; iH < nH; iH++) {
+       if (isFile[iH]) {
+         eta_b[iH]->Fill(hlt_eta, finWgt);
+         eta_e[iH]->Fill(hlt_eta, finWgt);
+       }
+     }
 
-         p4Probe.SetPtEtaPhiE(et[iProbe], eta[iProbe], phi[iProbe], e[iProbe]);
+     if (std::abs(sc_eta) < etaEB) {
 
-         if ((p4Tag + p4Probe).M() < 70. or (p4Tag + p4Probe).M() > 110.) continue;
+       if (isFile[1]) {
+         eet_b[0]->Fill(ele_et, finWgt);
+         phi_b[0]->Fill(sc_phi, finWgt);
+         sie_b[0]->Fill(ele_sie, finWgt);
+         hoe_b[0]->Fill(ele_hoe, finWgt);
+         eca_b[0]->Fill(ele_eca, finWgt);
+         hca_b[0]->Fill(ele_hca, finWgt);
+         eop_b[0]->Fill(std::abs(ele_eop), finWgt);
+         chi_b[0]->Fill(ele_chi, finWgt);
+         mih_b[0]->Fill(ele_mih, finWgt);
+         des_b[0]->Fill(std::abs(ele_des), finWgt);
+         dph_b[0]->Fill(std::abs(ele_dph), finWgt);
+         tks_b[0]->Fill(ele_tks, finWgt);
+       }
 
-         if (!checkCand("", -1, rho,
-                        e[iProbe], et[iProbe], eta[iProbe], phi[iProbe],
-                        sie[iProbe], hoe[iProbe], eca[iProbe], hca[iProbe], eop[iProbe],
-                        chi[iProbe], mih[iProbe], des[iProbe], dph[iProbe], tks[iProbe])) continue;
-
-         std::string cFile(t1->GetCurrentFile()->GetName());
-
-         bool isFile[nH] = {false, false, false, false, false, false};
-         for (int iH = 0; iH < nH; iH++)
-           isFile[iH] = cFile.std::string::find(pairFileLeg[iH].first) != std::string::npos;
-
-         for (int iH = 0; iH < nH; iH++) {
-           if (isFile[iH]) {
-             eta_b[iH]->Fill(eta[iProbe], finWgt);
-             eta_e[iH]->Fill(eta[iProbe], finWgt);
-
-             if (std::abs(eta[iProbe]) < etaEB) {
-               eet_b[iH]->Fill(et[iProbe], finWgt);
-               phi_b[iH]->Fill(phi[iProbe], finWgt);
-               sie_b[iH]->Fill(sie[iProbe], finWgt);
-               hoe_b[iH]->Fill(hoe[iProbe], finWgt);
-               eca_b[iH]->Fill(eca[iProbe], finWgt);
-               hca_b[iH]->Fill(hca[iProbe], finWgt);
-               eop_b[iH]->Fill(eop[iProbe], finWgt);
-               chi_b[iH]->Fill(chi[iProbe], finWgt);
-               mih_b[iH]->Fill(mih[iProbe], finWgt);
-               des_b[iH]->Fill(des[iProbe], finWgt);
-               dph_b[iH]->Fill(dph[iProbe], finWgt);
-               tks_b[iH]->Fill(tks[iProbe], finWgt);
-             }
-
-             if (std::abs(eta[iProbe]) >= etaET) {
-               eet_e[iH]->Fill(et[iProbe], finWgt);
-               phi_e[iH]->Fill(phi[iProbe], finWgt);
-               sie_e[iH]->Fill(sie[iProbe], finWgt);
-               hoe_e[iH]->Fill(hoe[iProbe], finWgt);
-               eca_e[iH]->Fill(eca[iProbe], finWgt);
-               hca_e[iH]->Fill(hca[iProbe], finWgt);
-               eop_e[iH]->Fill(eop[iProbe], finWgt);
-               chi_e[iH]->Fill(chi[iProbe], finWgt);
-               mih_e[iH]->Fill(mih[iProbe], finWgt);
-               des_e[iH]->Fill(des[iProbe], finWgt);
-               dph_e[iH]->Fill(dph[iProbe], finWgt);
-               tks_e[iH]->Fill(tks[iProbe], finWgt);
-             }
-           }
+       for (int iH = 1; iH < nH; iH++) {
+         if (isFile[iH]) {
+           eet_b[iH]->Fill(hlt_et, finWgt);
+           phi_b[iH]->Fill(hlt_phi, finWgt);
+           sie_b[iH]->Fill(hlt_sie, finWgt);
+           hoe_b[iH]->Fill(hlt_hoe, finWgt);
+           eca_b[iH]->Fill(hlt_eca, finWgt);
+           hca_b[iH]->Fill(hlt_hca, finWgt);
+           eop_b[iH]->Fill(hlt_eop, finWgt);
+           chi_b[iH]->Fill(hlt_chi, finWgt);
+           mih_b[iH]->Fill(hlt_mih, finWgt);
+           des_b[iH]->Fill(hlt_des, finWgt);
+           dph_b[iH]->Fill(hlt_dph, finWgt);
+           tks_b[iH]->Fill(hlt_tks, finWgt);
          }
-       } // eol probe
-     } // eol tag
-   } // eol evt
+       }
+     }
+
+     if (std::abs(sc_eta) >= etaET) {
+
+       if (isFile[1]) {
+         eet_e[0]->Fill(ele_et, finWgt);
+         phi_e[0]->Fill(sc_phi, finWgt);
+         sie_e[0]->Fill(ele_sie, finWgt);
+         hoe_e[0]->Fill(ele_hoe, finWgt);
+         eca_e[0]->Fill(ele_eca, finWgt);
+         hca_e[0]->Fill(ele_hca, finWgt);
+         eop_e[0]->Fill(std::abs(ele_eop), finWgt);
+         chi_e[0]->Fill(ele_chi, finWgt);
+         mih_e[0]->Fill(ele_mih, finWgt);
+         des_e[0]->Fill(std::abs(ele_des), finWgt);
+         dph_e[0]->Fill(std::abs(ele_dph), finWgt);
+         tks_e[0]->Fill(ele_tks, finWgt);
+       }
+
+       for (int iH = 1; iH < nH; iH++) {
+         if (isFile[iH]) {
+           eet_e[iH]->Fill(hlt_et, finWgt);
+           phi_e[iH]->Fill(hlt_phi, finWgt);
+           sie_e[iH]->Fill(hlt_sie, finWgt);
+           hoe_e[iH]->Fill(hlt_hoe, finWgt);
+           eca_e[iH]->Fill(hlt_eca, finWgt);
+           hca_e[iH]->Fill(hlt_hca, finWgt);
+           eop_e[iH]->Fill(hlt_eop, finWgt);
+           chi_e[iH]->Fill(hlt_chi, finWgt);
+           mih_e[iH]->Fill(hlt_mih, finWgt);
+           des_e[iH]->Fill(hlt_des, finWgt);
+           dph_e[iH]->Fill(hlt_dph, finWgt);
+           tks_e[iH]->Fill(hlt_tks, finWgt);
+         }
+       }
+     }
+   }
 
    // -------------------------------------------------- //
 
@@ -313,11 +347,11 @@ void tnpOn() {
 
    createEBEERatioPlot(pairFileLeg, "tks", tks_b, tks_e, nH, fName, "TrackIso (GeV)", "", "", true, -1, 0., 79999., 0., 19999.);
    */
-   gROOT->ProcessLine(".q");  
+   gROOT->ProcessLine(".q");
 }
 
 int main() {
-  tnpOn();
+  tnpDist();
   return 0;
 }
 

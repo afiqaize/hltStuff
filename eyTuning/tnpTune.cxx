@@ -1,167 +1,26 @@
-// Stolen from mvaPlot in 740
+// Updated to use hltWP
 // For the tnp hlt vs reco electron plotting
-// Nov 25 updated and streamlined
-// Usage: root -l tnpTune.cxx++
+// Usage: root -l -b tnpTune.cxx++
 
-#include "iostream"
-#include <iomanip>
-#include <TH1.h>
-#include <TCanvas.h>
-#include <TPad.h>
-#include "stdlib.h"
-#include <TStyle.h>
-#include <TH1D.h>
-#include <TGraph.h>
-#include <TAxis.h>
-#include <TLegend.h>
-#include <TFile.h>
-#include <string.h>
-#include <TChain.h>
-#include <TTree.h>
-#include <TROOT.h>
-#include <TGaxis.h>
-#include <TLatex.h>
-#include <TBufferFile.h>
-#include <TLorentzVector.h>
+#include "TFile.h"
+#include "TChain.h"
+#include "TTree.h"
+#include "TROOT.h"
+#include "TBufferFile.h"
+#include "TLorentzVector.h"
+#include "TF1.h"
+
+#include "hltWP.cxx"
 #include "/home/afiqaize/root53434/macros/tdrstyle.C"
 
-using namespace std;
+double effCalc(int nStep, TH1D* hist) {
+  double eff = 0.;
+  int lim = 0;
 
-Bool_t checkCand(const string setWP, const Float_t eta,
-                 const Float_t sie, const Float_t hoe, const Float_t ecc, const Float_t hcc, 
-                 const Float_t eop, const Float_t chi, const Float_t mih, 
-                 const Float_t des, const Float_t dph, const Float_t tki) {
-
-  Bool_t candOk = true;
-  Float_t varVal[10], varThr[10];
-
-  // Order as in the method call -> HLT filtering
-  varVal[0] = sie; varVal[1] = hoe;
-  varVal[2] = ecc; varVal[3] = hcc;
-  varVal[4] = eop; varVal[5] = chi;
-  varVal[6] = mih; varVal[7] = des;
-  varVal[8] = dph; varVal[9] = tki;
-
-  if (fabs(eta) < 1.4791 && setWP == "WPLoose") {
-  varThr[0] = 0.011; varThr[1] = 0.06;
-  varThr[2] = 0.145; varThr[3] = 0.15;
-  varThr[4] = 0.012; varThr[5] = 99.0;
-  varThr[6] = 99.0 ; varThr[7] = 0.004;
-  varThr[8] = 0.02 ; varThr[9] = 0.08;
-  }
-
-  else if (fabs(eta) > 1.4791 && setWP == "WPLoose") {
-  varThr[0] = 0.032; varThr[1] = 0.065;
-  varThr[2] = 0.135; varThr[3] = 0.13;
-  varThr[4] = 0.01 ; varThr[5] = 2.8;
-  varThr[6] = 2.5  ; varThr[7] = 0.007;
-  varThr[8] = 0.02 ; varThr[9] = 0.08;
-  }
-
-  else if (fabs(eta) < 1.4791 && setWP == "WPTight") {
-  varThr[0] = 0.011; varThr[1] = 0.05;
-  varThr[2] = 0.145; varThr[3] = 0.13;
-  varThr[4] = 0.01 ; varThr[5] = 99.0;
-  varThr[6] = 99.0 ; varThr[7] = 0.0035;
-  varThr[8] = 0.015; varThr[9] = 9990.06;
-  }
-
-  else if (fabs(eta) > 1.4791 && setWP == "WPTight") {
-  varThr[0] = 0.029; varThr[1] = 0.05;
-  varThr[2] = 0.105; varThr[3] = 0.095;
-  varThr[4] = 0.008; varThr[5] = 2.5;
-  varThr[6] = 1.5  ; varThr[7] = 0.006;
-  varThr[8] = 0.015; varThr[9] = 9990.06;
-  }
-
-  else {
-  varThr[0] = 999.; varThr[1] = 999.;
-  varThr[2] = 999.; varThr[3] = 999.;
-  varThr[4] = 999.; varThr[5] = 999.;
-  varThr[6] = 999.; varThr[7] = 999.;
-  varThr[8] = 999.; varThr[9] = 999.;
-  }
-
-  for (Int_t aa = 0; aa < 10; aa++)
-    candOk = candOk and (varVal[aa] < varThr[aa]);
-
-  return candOk;
-
-}
-
-// Too many dumb lines for styling... doing it here
-void styleHist(TH1D* varHist, Int_t useCol, Int_t filSty, Int_t marSty, Int_t marSiz, Float_t linWid) {
-
-   varHist->SetFillColor(useCol);
-   varHist->SetFillStyle(filSty);
-   varHist->SetMarkerColor(useCol);
-   varHist->SetMarkerStyle(marSty);
-   varHist->SetMarkerSize(marSiz);
-   varHist->SetLineColor(useCol);
-   varHist->SetLineWidth(linWid);
-
-}
-
-void axHist(TH1D* varHist, Float_t yMin, Float_t yMax,
-            string yTxt, Float_t ySiz, Float_t yOff, Float_t yLab,
-            string xTxt, Float_t xSiz, Float_t xOff, Float_t xLab) {
-
-   varHist->SetMinimum(yMin);
-   varHist->SetMaximum(yMax);
-
-   varHist->SetYTitle(yTxt.c_str());
-   varHist->GetYaxis()->SetTitleSize(ySiz);
-   varHist->GetYaxis()->SetTitleOffset(yOff);
-   varHist->GetYaxis()->SetLabelSize(yLab);
-
-   varHist->SetXTitle(xTxt.c_str());
-   varHist->GetXaxis()->SetTitleSize(xSiz);
-   varHist->GetXaxis()->SetTitleOffset(xOff);
-   varHist->GetXaxis()->SetLabelSize(xLab);
-
-}
-
-void styleGr(TGraph* varGr, Int_t useCol, Int_t filSty, Int_t marSty, Int_t marSiz, Float_t linWid) {
-
-   varGr->SetFillColor(useCol);
-   varGr->SetFillStyle(filSty);
-   varGr->SetMarkerColor(useCol);
-   varGr->SetMarkerStyle(marSty);
-   varGr->SetMarkerSize(marSiz);
-   varGr->SetLineColor(useCol);
-   varGr->SetLineWidth(linWid);
-
-}
-
-void axGr(TGraph* varGr, Float_t yMin, Float_t yMax,
-            string yTxt, Float_t ySiz, Float_t yOff, Float_t yLab,
-            string xTxt, Float_t xSiz, Float_t xOff, Float_t xLab) {
-
-   varGr->SetMinimum(yMin);
-   varGr->SetMaximum(yMax);
-
-   varGr->GetYaxis()->SetTitle(yTxt.c_str());
-   varGr->GetYaxis()->SetTitleSize(ySiz);
-   varGr->GetYaxis()->SetTitleOffset(yOff);
-   varGr->GetYaxis()->SetLabelSize(yLab);
-
-   varGr->GetXaxis()->SetTitle(xTxt.c_str());
-   varGr->GetXaxis()->SetTitleSize(xSiz);
-   varGr->GetXaxis()->SetTitleOffset(xOff);
-   varGr->GetXaxis()->SetLabelSize(xLab);
-
-}
-
-Double_t effCalc(Int_t nStep, TH1D* hist) {
-
-  Double_t eff = 0.;
-  Int_t lim = 0;
-
-  for (Int_t j = nStep; j > lim; j--)
+  for (int j = nStep; j > lim; j--)
     eff += hist->GetBinContent(j);
 
   return eff;
-
 }
 
 void tnpTune() {
@@ -184,171 +43,67 @@ void tnpTune() {
 
    // -------------------------------------------------- //
 
-   string sigLeg = "DY", bkgLeg = "QCD";
-
-   Int_t meeb_nBin = 82, meee_nBin = 82;
-   Double_t meeb_max = 110.5, meee_max = 110.5;
-   Double_t meeb_min = 69.5, meee_min = 69.5;
-
-   Int_t phib_nBin = 12, phie_nBin = 12;
-   Double_t phib_max = 3.142, phie_max = 3.142;
-   Double_t phib_min = -3.142, phie_min = -3.142;
-
-   // For Et
-   Int_t eetb_nBin = 120, eete_nBin = 120;
-   Double_t eetb_max = 360., eete_max = 360.;
-   Double_t eetb_min = 0., eete_min = 0.;
-
-   Int_t sieb_nBin = 100, siee_nBin = 120;
-   Double_t sieb_max = .02, siee_max = .06;
-   Double_t sieb_min = 0., siee_min = 0.;
-
-   // For H/E
-   Int_t hoeb_nBin = 40, hoee_nBin = 60;
-   Double_t hoeb_max = .2, hoee_max = .3;
-   Double_t hoeb_min = 0., hoee_min = 0.;
-
-   Int_t ecab_nBin = 60, ecae_nBin = 60;
-   Double_t ecab_max = 30., ecae_max = 30.;
-   Double_t ecab_min = 0., ecae_min = 0.;
-
-   Int_t eccb_nBin = 60, ecce_nBin = 60;
-   Double_t eccb_max = .6, ecce_max = .6;
-   Double_t eccb_min = 0., ecce_min = 0.;
-
-   Int_t hcab_nBin = 60, hcae_nBin = 60;
-   Double_t hcab_max = 30., hcae_max = 30.;
-   Double_t hcab_min = 0., hcae_min = 0.;
-
-   Int_t hccb_nBin = 60, hcce_nBin = 60;
-   Double_t hccb_max = .6, hcce_max = .6;
-   Double_t hccb_min = 0., hcce_min = 0.;
-
-   Int_t eopb_nBin = 100, eope_nBin = 100;
-   Double_t eopb_max = .1, eope_max = .1;
-   Double_t eopb_min = 0., eope_min = 0.;
-
-   Int_t chib_nBin = 150, chie_nBin = 150;
-   Double_t chib_max = 30., chie_max = 30.;
-   Double_t chib_min = 0., chie_min = 0.;
-
-   Int_t mihb_nBin = 4, mihe_nBin = 6;
-   Double_t mihb_max = 3.5, mihe_max = 5.5;
-   Double_t mihb_min = -0.5, mihe_min = -0.5;
-
-   Int_t desb_nBin = 60, dese_nBin = 60;
-   Double_t desb_max = 0.03, dese_max = 0.03;
-   Double_t desb_min = 0., dese_min = 0.;
-
-   Int_t dphb_nBin = 100, dphe_nBin = 100;
-   Double_t dphb_max = 0.1, dphe_max = 0.1;
-   Double_t dphb_min = 0., dphe_min = 0.;
-
-   Int_t tkib_nBin = 100, tkie_nBin = 100;
-   Double_t tkib_max = 0.5, tkie_max = 0.5;
-   Double_t tkib_min = 0., tkie_min = 0.;
-
-   // -------------------------------------------------- //
-
    //varName[3] = "Evt / bin";
    varName[3] = "a. u.";
 
    if (varName[0] == "sie") {
-
      varName[1] = "Cluster Shape";
      varName[2] = "#sigma_{i#etai#eta}";
-
    }
 
-   if (varName[0] == "hoe") {
-
+   if (varName[0] == "hor") {
      varName[1] = "Hadronic / EM";
      varName[2] = "H/E";
-
    }
 
-   if (varName[0] == "ecu" or varName[0] == "eca") {
-
-     varName[1] = "EcalIso";
-     varName[2] = "EcalIso (GeV)";
-
-   }
-
-   if (varName[0] == "ecc") {
-
+   if (varName[0] == "ecr") {
      varName[1] = "Relative EcalIso";
      varName[2] = "EcalIso / E_{T}";
-
    }
 
-   if (varName[0] == "hcu" or varName[0] == "hca") {
-
-     varName[1] = "HcalIso";
-     varName[2] = "HcalIso (GeV)";
-
-   }
-
-   if (varName[0] == "hcc") {
-
+   if (varName[0] == "hcr") {
      varName[1] = "Relative HcalIso";
      varName[2] = "HcalIso / E_{T}";
-
    }
 
    if (varName[0] == "eop") {
-
      varName[1] = "1/E - 1/P";
      varName[2] = "1/E - 1/P (GeV^{-1})";
-
    }
 
    if (varName[0] == "mih") {
-
      varName[1] = "Missing Tracker Hits";
      varName[2] = "Missing Hits";
-
    }
 
    if (varName[0] == "des") {
-
      varName[1] = "Track - Seed Cluster #Delta#eta";
      varName[2] = "#Delta#eta_{seed}";
-
    }
 
    if (varName[0] == "det") {
-
      varName[1] = "Track - SC #Delta#eta";
      varName[2] = "#Delta#eta";
-
    }
 
    if (varName[0] == "dph") {
-
      varName[1] = "Track - SC #Delta#phi";
      varName[2] = "#Delta#phi";
-
    }
 
    if (varName[0] == "chi") {
-
      varName[1] = "Track Fit #chi^{2}";
      varName[2] = "Fit #chi^{2}";
-
    }
 
-   if (varName[0] == "tki") {
-
+   if (varName[0] == "tkr") {
      varName[1] = "Relative TrkIso";
      varName[2] = "TrkIso / E_{T}";
-
    }
 
    if (varName[0] == "lol") {
-
      varName[1] = "Testing";
      varName[2] = "Whatever";
-
    }
 
    // -------------------------------------------------- //
@@ -366,30 +121,20 @@ void tnpTune() {
    styleHist(sie_1b, kRed + 1, 0, 20, 1, 2.0);
    styleHist(sie_1e, kRed + 1, 0, 20, 1, 2.0);
 
-   TH1D* hoe_1b = new TH1D("hoe_1b", (varName[1] + " Distribution").c_str(), hoeb_nBin, hoeb_min, hoeb_max);
-   TH1D* hoe_1e = new TH1D("hoe_1e", (varName[1] + " Distribution").c_str(), hoee_nBin, hoee_min, hoee_max);
-   styleHist(hoe_1b, kRed + 1, 0, 20, 1, 2.0);
-   styleHist(hoe_1e, kRed + 1, 0, 20, 1, 2.0);
+   TH1D* hor_1b = new TH1D("hor_1b", (varName[1] + " Distribution").c_str(), horb_nBin, horb_min, horb_max);
+   TH1D* hor_1e = new TH1D("hor_1e", (varName[1] + " Distribution").c_str(), hore_nBin, hore_min, hore_max);
+   styleHist(hor_1b, kRed + 1, 0, 20, 1, 2.0);
+   styleHist(hor_1e, kRed + 1, 0, 20, 1, 2.0);
 
-   TH1D* eca_1b = new TH1D("eca_1b", (varName[1] + " Distribution").c_str(), ecab_nBin, ecab_min, ecab_max);
-   TH1D* eca_1e = new TH1D("eca_1e", (varName[1] + " Distribution").c_str(), ecae_nBin, ecae_min, ecae_max);
-   styleHist(eca_1b, kRed + 1, 0, 20, 1, 2.0);
-   styleHist(eca_1e, kRed + 1, 0, 20, 1, 2.0);
+   TH1D* ecr_1b = new TH1D("ecr_1b", (varName[1] + " Distribution").c_str(), ecrb_nBin, ecrb_min, ecrb_max);
+   TH1D* ecr_1e = new TH1D("ecr_1e", (varName[1] + " Distribution").c_str(), ecre_nBin, ecre_min, ecre_max);
+   styleHist(ecr_1b, kRed + 1, 0, 20, 1, 2.0);
+   styleHist(ecr_1e, kRed + 1, 0, 20, 1, 2.0);
 
-   TH1D* ecc_1b = new TH1D("ecc_1b", (varName[1] + " Distribution").c_str(), eccb_nBin, eccb_min, eccb_max);
-   TH1D* ecc_1e = new TH1D("ecc_1e", (varName[1] + " Distribution").c_str(), ecce_nBin, ecce_min, ecce_max);
-   styleHist(ecc_1b, kRed + 1, 0, 20, 1, 2.0);
-   styleHist(ecc_1e, kRed + 1, 0, 20, 1, 2.0);
-
-   TH1D* hca_1b = new TH1D("hca_1b", (varName[1] + " Distribution").c_str(), hcab_nBin, hcab_min, hcab_max);
-   TH1D* hca_1e = new TH1D("hca_1e", (varName[1] + " Distribution").c_str(), hcae_nBin, hcae_min, hcae_max);
-   styleHist(hca_1b, kRed + 1, 0, 20, 1, 2.0);
-   styleHist(hca_1e, kRed + 1, 0, 20, 1, 2.0);
-
-   TH1D* hcc_1b = new TH1D("hcc_1b", (varName[1] + " Distribution").c_str(), hccb_nBin, hccb_min, hccb_max);
-   TH1D* hcc_1e = new TH1D("hcc_1e", (varName[1] + " Distribution").c_str(), hcce_nBin, hcce_min, hcce_max);
-   styleHist(hcc_1b, kRed + 1, 0, 20, 1, 2.0);
-   styleHist(hcc_1e, kRed + 1, 0, 20, 1, 2.0);
+   TH1D* hcr_1b = new TH1D("hcr_1b", (varName[1] + " Distribution").c_str(), hcrb_nBin, hcrb_min, hcrb_max);
+   TH1D* hcr_1e = new TH1D("hcr_1e", (varName[1] + " Distribution").c_str(), hcre_nBin, hcre_min, hcre_max);
+   styleHist(hcr_1b, kRed + 1, 0, 20, 1, 2.0);
+   styleHist(hcr_1e, kRed + 1, 0, 20, 1, 2.0);
 
    TH1D* eop_1b = new TH1D("eop_1b", (varName[1] + " Distribution").c_str(), eopb_nBin, eopb_min, eopb_max);
    TH1D* eop_1e = new TH1D("eop_1e", (varName[1] + " Distribution").c_str(), eope_nBin, eope_min, eope_max);
@@ -433,30 +178,20 @@ void tnpTune() {
    styleHist(sie_2b, kAzure + 1, 1001, 2, 1, 2.0);
    styleHist(sie_2e, kAzure + 1, 1001, 2, 1, 2.0);
 
-   TH1D* hoe_2b = new TH1D("hoe_2b", (varName[1] + " Distribution").c_str(), hoeb_nBin, hoeb_min, hoeb_max);
-   TH1D* hoe_2e = new TH1D("hoe_2e", (varName[1] + " Distribution").c_str(), hoee_nBin, hoee_min, hoee_max);
-   styleHist(hoe_2b, kAzure + 1, 1001, 2, 1, 2.0);
-   styleHist(hoe_2e, kAzure + 1, 1001, 2, 1, 2.0);
+   TH1D* hor_2b = new TH1D("hor_2b", (varName[1] + " Distribution").c_str(), horb_nBin, horb_min, horb_max);
+   TH1D* hor_2e = new TH1D("hor_2e", (varName[1] + " Distribution").c_str(), hore_nBin, hore_min, hore_max);
+   styleHist(hor_2b, kAzure + 1, 1001, 2, 1, 2.0);
+   styleHist(hor_2e, kAzure + 1, 1001, 2, 1, 2.0);
 
-   TH1D* eca_2b = new TH1D("eca_2b", (varName[1] + " Distribution").c_str(), ecab_nBin, ecab_min, ecab_max);
-   TH1D* eca_2e = new TH1D("eca_2e", (varName[1] + " Distribution").c_str(), ecae_nBin, ecae_min, ecae_max);
-   styleHist(eca_2b, kAzure + 1, 1001, 2, 1, 2.0);
-   styleHist(eca_2e, kAzure + 1, 1001, 2, 1, 2.0);
+   TH1D* ecr_2b = new TH1D("ecr_2b", (varName[1] + " Distribution").c_str(), ecrb_nBin, ecrb_min, ecrb_max);
+   TH1D* ecr_2e = new TH1D("ecr_2e", (varName[1] + " Distribution").c_str(), ecre_nBin, ecre_min, ecre_max);
+   styleHist(ecr_2b, kAzure + 1, 1001, 2, 1, 2.0);
+   styleHist(ecr_2e, kAzure + 1, 1001, 2, 1, 2.0);
 
-   TH1D* ecc_2b = new TH1D("ecc_2b", (varName[1] + " Distribution").c_str(), eccb_nBin, eccb_min, eccb_max);
-   TH1D* ecc_2e = new TH1D("ecc_2e", (varName[1] + " Distribution").c_str(), ecce_nBin, ecce_min, ecce_max);
-   styleHist(ecc_2b, kAzure + 1, 1001, 2, 1, 2.0);
-   styleHist(ecc_2e, kAzure + 1, 1001, 2, 1, 2.0);
-
-   TH1D* hca_2b = new TH1D("hca_2b", (varName[1] + " Distribution").c_str(), hcab_nBin, hcab_min, hcab_max);
-   TH1D* hca_2e = new TH1D("hca_2e", (varName[1] + " Distribution").c_str(), hcae_nBin, hcae_min, hcae_max);
-   styleHist(hca_2b, kAzure + 1, 1001, 2, 1, 2.0);
-   styleHist(hca_2e, kAzure + 1, 1001, 2, 1, 2.0);
-
-   TH1D* hcc_2b = new TH1D("hcc_2b", (varName[1] + " Distribution").c_str(), hccb_nBin, hccb_min, hccb_max);
-   TH1D* hcc_2e = new TH1D("hcc_2e", (varName[1] + " Distribution").c_str(), hcce_nBin, hcce_min, hcce_max);
-   styleHist(hcc_2b, kAzure + 1, 1001, 2, 1, 2.0);
-   styleHist(hcc_2e, kAzure + 1, 1001, 2, 1, 2.0);
+   TH1D* hcr_2b = new TH1D("hcr_2b", (varName[1] + " Distribution").c_str(), hcrb_nBin, hcrb_min, hcrb_max);
+   TH1D* hcr_2e = new TH1D("hcr_2e", (varName[1] + " Distribution").c_str(), hcre_nBin, hcre_min, hcre_max);
+   styleHist(hcr_2b, kAzure + 1, 1001, 2, 1, 2.0);
+   styleHist(hcr_2e, kAzure + 1, 1001, 2, 1, 2.0);
 
    TH1D* eop_2b = new TH1D("eop_2b", (varName[1] + " Distribution").c_str(), eopb_nBin, eopb_min, eopb_max);
    TH1D* eop_2e = new TH1D("eop_2e", (varName[1] + " Distribution").c_str(), eope_nBin, eope_min, eope_max);
@@ -490,84 +225,112 @@ void tnpTune() {
 
    // -------------------------------------------------- //
 
-   string const inDir = "/home/afiqaize/Downloads/HLT_Val/dev/e_80x/file/v11/retune_Jun15/";
+   std::string const inDir = "";
 
-   TChain *t1 = new TChain("eleDistr");
-   t1->Add((inDir + "skim_m1z1ll.root").c_str());
-   t1->Add((inDir + "skim_m2qcd.root").c_str());
+   std::pair <std::string, std::string> pairFileLeg[2];
+   pairFileLeg[0] = std::make_pair("", "");
+   pairFileLeg[1] = std::make_pair("", "");
 
-   Bool_t isMC = false;
+   TChain *t1 = new TChain("hltTree");
+   for (int iH = 0; iH < 2; iH++)
+     t1->Add((inDir + pairFileLeg[iH].first + ".root").c_str());
 
-   Int_t nRun;
+   bool isMC = false;
+
+   int nRun;
    t1->SetBranchAddress("nRun", &nRun);
-   Int_t nEvt;
-   t1->SetBranchAddress("nEvt", &nEvt);
-   Int_t nLumi;
+   int nLumi;
    t1->SetBranchAddress("nLumi", &nLumi);
+   int nEvt;
+   t1->SetBranchAddress("nEvt", &nEvt);
+   int nBX;
+   t1->SetBranchAddress("nBX", &nBX);
+   int nOrb;
+   t1->SetBranchAddress("nOrb", &nOrb);
+   int nSto;
+   t1->SetBranchAddress("nSto", &nSto);
 
-   Int_t type;
+   int type;
    t1->SetBranchAddress("itype", &type);
-   Float_t weight;
+   double weight;
    t1->SetBranchAddress("weight", &weight);
-   Float_t puWgt;
+   double puWgt;
    t1->SetBranchAddress("puWgt", &puWgt);
-   Float_t rho;
+   int nVtx;
+   t1->SetBranchAddress("nVtx", &nVtx);
+   double rho;
    t1->SetBranchAddress("rho", &rho);
 
-   Int_t pass[10];
+   int pass[10];
    t1->SetBranchAddress("passHLT", pass);
-   Int_t genMatch[10];
+   int genMatch[10];
    t1->SetBranchAddress("genMatch", genMatch);
-   Int_t n;
+   int n;
    t1->SetBranchAddress("hlt_n", &n);
-   Float_t et[10];
+   double et[10];
    t1->SetBranchAddress("hlt_et", et);
-   Float_t etr[10];
+   double etr[10];
    t1->SetBranchAddress("hlt_etr", etr);
-   Float_t e[10];
+   double e[10];
    t1->SetBranchAddress("hlt_e", e);
-   Float_t er[10];
+   double er[10];
    t1->SetBranchAddress("hlt_er", er);
-   Float_t eta[10];
+   double eta[10];
    t1->SetBranchAddress("hlt_eta", eta);
-   Float_t phi[10];
+   double phi[10];
    t1->SetBranchAddress("hlt_phi", phi);
-   Float_t sie[10];
+   double sie[10];
    t1->SetBranchAddress("hlt_sie", sie);
-   Float_t hoe[10];
+   double hoe[10];
    t1->SetBranchAddress("hlt_hoe", hoe);
-   Float_t eca[10];
+   double eca[10];
    t1->SetBranchAddress("hlt_eca", eca);
-   Float_t ecc[10];
-   t1->SetBranchAddress("hlt_ecc", ecc);
-   Float_t hca[10];
+   double hca[10];
    t1->SetBranchAddress("hlt_hca", hca);
-   Float_t hcc[10];
-   t1->SetBranchAddress("hlt_hcc", hcc);
-   Float_t eop[10];
+   double ps2[10];
+   t1->SetBranchAddress("hlt_ps2", ps2);
+   double eop[10];
    t1->SetBranchAddress("hlt_eop", eop);
-   Float_t chi[10];
+   double esp[10];
+   t1->SetBranchAddress("hlt_esp", esp);
+   double chi[10];
    t1->SetBranchAddress("hlt_chi", chi);
-   Float_t mih[10];
+   double mih[10];
    t1->SetBranchAddress("hlt_mih", mih);
-   Float_t det[10];
+   double det[10];
    t1->SetBranchAddress("hlt_det", det);
-   Float_t des[10];
+   double des[10];
    t1->SetBranchAddress("hlt_des", des);
-   Float_t dph[10];
+   double dph[10];
    t1->SetBranchAddress("hlt_dph", dph);
-   Float_t tki[10];
-   t1->SetBranchAddress("hlt_tki", tki);
+   double tks[10];
+   t1->SetBranchAddress("hlt_tks", tks);
+
+   int mc_nBX, mc_nPUtrue, gp_n;
+   int mc_BX[100], mc_nPUobs[100];
+   double genWgt, gp_pt[10], gp_eta[10], gp_phi[10];
+
+    if (isMC) {
+      t1->SetBranchAddress("genWgt", &genWgt);
+      t1->SetBranchAddress("gp_n", &gp_n);
+      t1->SetBranchAddress("gp_pt", gp_pt);
+      t1->SetBranchAddress("gp_eta", gp_eta);
+      t1->SetBranchAddress("gpphi", gp_phi);
+      t1->SetBranchAddress("mc_nBX", &mc_nBX);
+      t1->SetBranchAddress("mc_BX", mc_BX);
+      t1->SetBranchAddress("mc_nPUtrue", &mc_nPUtrue);
+      t1->SetBranchAddress("mc_nPUobs", mc_nPUobs);
+    }
 
    // -------------------------------------------------- //
 
    TLorentzVector p4Tag, p4Probe;
    Float_t finWgt = 1.;
 
-   Int_t nEvt1 = t1->GetEntries();
+   int nEvt1 = t1->GetEntries();
    cout << "nEvt1 = " << nEvt1 << endl;
 
-   for (Int_t evt1 = 0; evt1 < nEvt1; evt1++) {
+   for (int evt1 = 0; evt1 < nEvt1; evt1++) {
 
      t1->GetEntry(evt1);
      finWgt = puWgt * weight;
@@ -575,46 +338,39 @@ void tnpTune() {
      // Loop for QCD-like things considering all cands
      if (type == -2) {
 
-       for (Int_t iCand = 0; iCand < n; iCand++) {
+       for (int iCand = 0; iCand < n; iCand++) {
 
-         if (et[iCand] < 20. or fabs(eta[iCand] > 2.5)) continue;
+         if (et[iCand] < 20. or std::abs(eta[iCand] > 2.5)) continue;
 
-         if (!checkCand("WPTight", eta[iCand],
-                        sie[iCand], hoe[iCand], ecc[iCand], hcc[iCand], eop[iCand],
-                        chi[iCand], mih[iCand], des[iCand], dph[iCand], tki[iCand])) continue;
+         if (!checkCand("", -1, rho,
+                        e[iCand], et[iCand], eta[iCand], phi[iCand],
+                        sie[iCand], hoe[iCand], eca[iCand], hca[iCand], eop[iCand],
+                        chi[iCand], mih[iCand], des[iCand], dph[iCand], tks[iCand])) continue;
 
-         if (fabs(eta[iCand]) < 1.444) {
-
+         if (std::abs(eta[iCand]) < etaEB) {
            sie_1b->Fill(sie[iCand], finWgt);
-           hoe_1b->Fill(hoe[iCand], finWgt);
-           eca_1b->Fill(eca[iCand], finWgt);
-           ecc_1b->Fill(ecc[iCand], finWgt);
-           hca_1b->Fill(hca[iCand], finWgt);
-           hcc_1b->Fill(hcc[iCand], finWgt);
+           hor_1b->Fill(hoe[iCand], finWgt);
+           ecr_1b->Fill(ecr[iCand], finWgt);
+           hcr_1b->Fill(hcr[iCand], finWgt);
            eop_1b->Fill(eop[iCand], finWgt);
            chi_1b->Fill(chi[iCand], finWgt);
            mih_1b->Fill(mih[iCand], finWgt);
            des_1b->Fill(des[iCand], finWgt);
            dph_1b->Fill(dph[iCand], finWgt);
-           tki_1b->Fill(tki[iCand], finWgt);
- 
+           tkr_1b->Fill(tkr[iCand], finWgt);
          }
 
-         if (fabs(eta[iCand]) >= 1.566) {
-
+         if (std::abs(eta[iCand]) >= etaET) {
            sie_1e->Fill(sie[iCand], finWgt);
-           hoe_1e->Fill(hoe[iCand], finWgt);
-           eca_1e->Fill(eca[iCand], finWgt);
-           ecc_1e->Fill(ecc[iCand], finWgt);
-           hca_1e->Fill(hca[iCand], finWgt);
-           hcc_1e->Fill(hcc[iCand], finWgt);
+           hor_1e->Fill(hoe[iCand], finWgt);
+           ecr_1e->Fill(ecr[iCand], finWgt);
+           hcr_1e->Fill(hcr[iCand], finWgt);
            eop_1e->Fill(eop[iCand], finWgt);
            chi_1e->Fill(chi[iCand], finWgt);
            mih_1e->Fill(mih[iCand], finWgt);
            des_1e->Fill(des[iCand], finWgt);
            dph_1e->Fill(dph[iCand], finWgt);
-           tki_1e->Fill(tki[iCand], finWgt);
-
+           tkr_1e->Fill(tkr[iCand], finWgt);
          }
        }
      }
@@ -622,7 +378,7 @@ void tnpTune() {
      // Loop TnP-style so that the object is likely an electron
      if (type == -1) {
 
-       for (Int_t iTag = 0; iTag < n; iTag++) {
+       for (int iTag = 0; iTag < n; iTag++) {
 
          if (pass[iTag] != 1) continue;
          if (isMC and genMatch[iTag] != 1) continue;
@@ -630,52 +386,45 @@ void tnpTune() {
 
          p4Tag.SetPtEtaPhiE(et[iTag], eta[iTag], phi[iTag], e[iTag]);
 
-         for (Int_t iProbe = 0; iProbe < n; iProbe++) {
+         for (int iProbe = 0; iProbe < n; iProbe++) {
 
            if (iProbe == iTag) continue;
            if (isMC and genMatch[iProbe] != 1) continue;
-           if (et[iProbe] < 20. or fabs(eta[iProbe] > 2.5)) continue;
+           if (et[iProbe] < 20. or std::abs(eta[iProbe] > 2.5)) continue;
 
            p4Probe.SetPtEtaPhiE(et[iProbe], eta[iProbe], phi[iProbe], e[iProbe]);
 
            if ((p4Tag + p4Probe).M() < 70. or (p4Tag + p4Probe).M() > 110.) continue;
 
-           if (!checkCand("WPTight", eta[iProbe],
-                          sie[iProbe], hoe[iProbe], ecc[iProbe], hcc[iProbe], eop[iProbe],
-                          chi[iProbe], mih[iProbe], des[iProbe], dph[iProbe], tki[iProbe])) continue;
+           if (!checkCand("", -1, rho,
+                          e[iProbe], et[iProbe], eta[iProbe], phi[iProbe],
+                          sie[iProbe], hoe[iProbe], eca[iProbe], hca[iProbe], eop[iProbe],
+                          chi[iProbe], mih[iProbe], des[iProbe], dph[iProbe], tks[iProbe])) continue;
 
-           if (fabs(eta[iProbe]) < 1.444) {
-
+           if (std::abs(eta[iProbe]) < etaEB) {
              sie_2b->Fill(sie[iProbe], finWgt);
-             hoe_2b->Fill(hoe[iProbe], finWgt);
-             eca_2b->Fill(eca[iProbe], finWgt);
-             ecc_2b->Fill(ecc[iProbe], finWgt);
-             hca_2b->Fill(hca[iProbe], finWgt);
-             hcc_2b->Fill(hcc[iProbe], finWgt);
+             hor_2b->Fill(hoe[iProbe], finWgt);
+             ecr_2b->Fill(ecr[iProbe], finWgt);
+             hcr_2b->Fill(hcr[iProbe], finWgt);
              eop_2b->Fill(eop[iProbe], finWgt);
              chi_2b->Fill(chi[iProbe], finWgt);
              mih_2b->Fill(mih[iProbe], finWgt);
              des_2b->Fill(des[iProbe], finWgt);
              dph_2b->Fill(dph[iProbe], finWgt);
-             tki_2b->Fill(tki[iProbe], finWgt);
-
+             tkr_2b->Fill(tkr[iProbe], finWgt);
            }
 
-           if (fabs(eta[iProbe]) >= 1.566) {
-
+           if (std::abs(eta[iProbe]) >= etaET) {
              sie_2e->Fill(sie[iProbe], finWgt);
-             hoe_2e->Fill(hoe[iProbe], finWgt);
-             eca_2e->Fill(eca[iProbe], finWgt);
-             ecc_2e->Fill(ecc[iProbe], finWgt);
-             hca_2e->Fill(hca[iProbe], finWgt);
-             hcc_2e->Fill(hcc[iProbe], finWgt);
+             hor_2e->Fill(hoe[iProbe], finWgt);
+             ecr_2e->Fill(ecr[iProbe], finWgt);
+             hcr_2e->Fill(hcr[iProbe], finWgt);
              eop_2e->Fill(eop[iProbe], finWgt);
              chi_2e->Fill(chi[iProbe], finWgt);
              mih_2e->Fill(mih[iProbe], finWgt);
              des_2e->Fill(des[iProbe], finWgt);
              dph_2e->Fill(dph[iProbe], finWgt);
-             tki_2e->Fill(tki[iProbe], finWgt);
-
+             tkr_2e->Fill(tkr[iProbe], finWgt);
            }
          }
        }
@@ -684,30 +433,30 @@ void tnpTune() {
 
    // -------------------------------------------------- //
 
-   //cout << tki_1b->GetEntries() << " " << tki_3b->GetEntries() << endl;
-   //cout << tki_1e->GetEntries() << " " << tki_3e->GetEntries() << endl;
+   //cout << tkr_1b->GetEntries() << " " << tkr_2b->GetEntries() << endl;
+   //cout << tkr_1e->GetEntries() << " " << tkr_2e->GetEntries() << endl;
 
-   tki_1b->Scale( 1. / tki_1b->Integral()); tki_1e->Scale( 1. / tki_1e->Integral());
-   tki_2b->Scale( 1. / tki_2b->Integral()); tki_2e->Scale( 1. / tki_2e->Integral());
+   tkr_1b->Scale( 1. / tkr_1b->Integral()); tkr_1e->Scale( 1. / tkr_1e->Integral());
+   tkr_2b->Scale( 1. / tkr_2b->Integral()); tkr_2e->Scale( 1. / tkr_2e->Integral());
 
-   static const Int_t nStep_b = tkib_nBin + 1, nStep_e = tkie_nBin + 1;
-   Double_t sStep_b = (tkib_max - tkib_min) / tkib_nBin, sStep_e = (tkie_max - tkie_min) / tkie_nBin;
+   static const int nStep_b = tkrb_nBin + 1, nStep_e = tkre_nBin + 1;
+   double sStep_b = (tkrb_max - tkrb_min) / tkrb_nBin, sStep_e = (tkre_max - tkre_min) / tkre_nBin;
 
    // Array size must be the same as bin + 1
-   Double_t eff_xb[nStep_b], eff_y1b[nStep_b], eff_y2b[nStep_b];
-   Double_t eff_xe[nStep_e], eff_y1e[nStep_e], eff_y2e[nStep_e];
-   Double_t std_xb[nStep_b], std_xe[nStep_e], std_yb[nStep_b], std_ye[nStep_e];
-   Double_t sig_b = 0., bkg_b = 0., sig_e = 0., bkg_e = 0.;
+   double eff_xb[nStep_b], eff_y1b[nStep_b], eff_y2b[nStep_b];
+   double eff_xe[nStep_e], eff_y1e[nStep_e], eff_y2e[nStep_e];
+   double std_xb[nStep_b], std_xe[nStep_e], std_yb[nStep_b], std_ye[nStep_e];
+   double sig_b = 0., bkg_b = 0., sig_e = 0., bkg_e = 0.;
 
    //std::cout << "Barrel" << "\n" << "Cut" << "\t" << "Eff bkg" << "\t" << "Eff sig" << std::endl;
 
-   for (Int_t p = 0; p < nStep_b; p++) {
+   for (int p = 0; p < nStep_b; p++) {
 
-     eff_xb[p] = (p * sStep_b) + tkib_min;
-     eff_y1b[p] = effCalc(p, tki_1b);
-     eff_y2b[p] = effCalc(p, tki_2b);
+     eff_xb[p] = (p * sStep_b) + tkrb_min;
+     eff_y1b[p] = effCalc(p, tkr_1b);
+     eff_y2b[p] = effCalc(p, tkr_2b);
 
-     if (fabs(eff_xb[p] - cut_b) < sStep_b / 2.) {
+     if (std::abs(eff_xb[p] - cut_b) < sStep_b / 2.) {
        sig_b = eff_y2b[p];
        bkg_b = eff_y1b[p];
      }
@@ -715,7 +464,7 @@ void tnpTune() {
      std_xb[p] = cut_b;
      if (p == 0) std_yb[p] = 10.;
      else if (p == nStep_b - 1) std_yb[p] = 0.;
-     else std_yb[p] = (1. - ((Double_t) (p + 1) / (Double_t) nStep_b));
+     else std_yb[p] = (1. - ((double) (p + 1) / (double) nStep_b));
 
      //if (eff_y2b[p] <= 1.)
      //  std::cout << std::setprecision(4) << std::fixed << eff_xb[p] << "\t" << std::setprecision(3) << eff_y1b[p] * 100. << "\t" << eff_y2b[p] * 100. << std::endl;
@@ -724,13 +473,13 @@ void tnpTune() {
 
    //std::cout << "\n" << "Endcap" << "\n" << "Cut" << "\t" << "Eff bkg" << "\t" << "Eff sig" << std::endl;
 
-   for (Int_t q = 0; q < nStep_e; q++) {
+   for (int q = 0; q < nStep_e; q++) {
 
-     eff_xe[q] = (q * sStep_e) + tkie_min;
-     eff_y1e[q] = effCalc(q, tki_1e);
-     eff_y2e[q] = effCalc(q, tki_2e);
+     eff_xe[q] = (q * sStep_e) + tkre_min;
+     eff_y1e[q] = effCalc(q, tkr_1e);
+     eff_y2e[q] = effCalc(q, tkr_2e);
 
-     if (fabs(eff_xe[q] - cut_e) < sStep_e / 2.) {
+     if (std::abs(eff_xe[q] - cut_e) < sStep_e / 2.) {
        sig_e = eff_y2e[q];
        bkg_e = eff_y1e[q];
      }
@@ -738,7 +487,7 @@ void tnpTune() {
      std_xe[q] = cut_e;
      if (q == 0) std_ye[q] = 10.;
      else if (q == nStep_e - 1) std_ye[q] = 0.;
-     else std_ye[q] = (1. - ((Double_t) (q + 1)  / (Double_t) nStep_e));
+     else std_ye[q] = (1. - ((double) (q + 1)  / (double) nStep_e));
 
      //if (eff_y2e[q] <= 1.)
      //  std::cout << std::setprecision(4) << std::fixed <<  eff_xe[q] << "\t" << std::setprecision(3) << eff_y1e[q] * 100. << "\t" << eff_y2e[q] * 100. << std::endl;
@@ -758,13 +507,13 @@ void tnpTune() {
    eff_2b->SetTitle((varName[1] + " EB Efficiency").c_str());
    styleGr(eff_2b, kAzure + 1, 0, 0, 0, 3.0);
    axGr(eff_2b, 0., 1.049, "Efficiency", 0.027, 0.95, 0.025, varName[2], 0.027, 1.15, 0.025);
-   eff_2b->GetXaxis()->SetLimits(tkib_min, tkib_max);
+   eff_2b->GetXaxis()->SetLimits(tkrb_min, tkrb_max);
 
    TGraph* eff_2e = new TGraph(nStep_e, eff_xe, eff_y2e);
    eff_2e->SetTitle((varName[1] + " EE Efficiency").c_str());
    styleGr(eff_2e, kAzure + 1, 0, 0, 0, 3.0);
    axGr(eff_2e, 0., 1.049, "Efficiency", 0.027, 0.95, 0.025, varName[2], 0.027, 1.15, 0.025);
-   eff_2e->GetXaxis()->SetLimits(tkie_min, tkie_max);
+   eff_2e->GetXaxis()->SetLimits(tkre_min, tkre_max);
 
    TGraph* stdb = new TGraph(nStep_b, std_xb, std_yb);
    stdb->SetLineColor(kBlack);
@@ -805,20 +554,20 @@ void tnpTune() {
      yMin_e = yMin_e / 5.;
    }
 
-   axHist(tki_2b, yMin_b, yMax_b, varName[3], 0.027, 1.05, 0.025, varName[2], 0.027, 1.15, 0.025);
-   axHist(tki_2e, yMin_e, yMax_e, varName[3], 0.027, 1.05, 0.025, varName[2], 0.027, 1.15, 0.025);
+   axHist(tkr_2b, yMin_b, yMax_b, varName[3], 0.027, 1.05, 0.025, varName[2], 0.027, 1.15, 0.025);
+   axHist(tkr_2e, yMin_e, yMax_e, varName[3], 0.027, 1.05, 0.025, varName[2], 0.027, 1.15, 0.025);
 
    TLatex txt;
    txt.SetTextSize(0.035);
    txt.SetTextAlign(13);
-   string topLeft, topRight;
+   std::string topLeft, topRight;
    topLeft = "#bf{CMS} #it{Simulation Preliminary}";
    topRight = "(13 TeV)";
 
    TLegend *leg01 = new TLegend(.69, .67, .87, .85);
    leg01->SetHeader((legHead + "#left|#eta^{e}#right| < 1.444").c_str());
-   leg01->AddEntry(tki_2b, (sigLeg).c_str(), "l");
-   leg01->AddEntry(tki_1b, (bkgLeg).c_str(), "l");
+   leg01->AddEntry(tkr_2b, (sigLeg).c_str(), "l");
+   leg01->AddEntry(tkr_1b, (bkgLeg).c_str(), "l");
    leg01->SetFillColor(0);
    leg01->SetBorderSize(0);
    leg01->SetTextSize(0.03);
@@ -826,8 +575,8 @@ void tnpTune() {
 
    TLegend *leg02 = new TLegend(.69, .67, .87, .85);
    leg02->SetHeader((legHead + "1.566 < #left|#eta^{e}#right| < 2.5").c_str());
-   leg02->AddEntry(tki_2e, (sigLeg).c_str(), "l");
-   leg02->AddEntry(tki_1e, (bkgLeg).c_str(), "l");
+   leg02->AddEntry(tkr_2e, (sigLeg).c_str(), "l");
+   leg02->AddEntry(tkr_1e, (bkgLeg).c_str(), "l");
    leg02->SetFillColor(0);
    leg02->SetBorderSize(0);
    leg02->SetTextSize(0.03);
@@ -835,7 +584,7 @@ void tnpTune() {
 
    // -------------------------------------------------- //
 
-   string const outDir = inDir + "/opt_v0/plot/";
+   std::string const outDir = inDir + "/opt_v0/plot/";
 
    TCanvas *cv1 = new TCanvas("cv1", "cv1", 200, 10, 1000, 1000);
    TCanvas *cv2 = new TCanvas("cv2", "cv2", 200, 10, 1000, 1000);
@@ -847,8 +596,8 @@ void tnpTune() {
    cv1->cd();
 
    if (drawLog) cv1->SetLogy();
-   tki_2b->Draw("hist");
-   tki_1b->Draw("histsame");
+   tkr_2b->Draw("hist");
+   tkr_1b->Draw("histsame");
    stdb->Draw("same");
 
    leg01->Draw();
@@ -861,8 +610,8 @@ void tnpTune() {
    cv2->cd();
 
    if (drawLog) cv2->SetLogy();
-   tki_2e->Draw("hist");
-   tki_1e->Draw("histsame");
+   tkr_2e->Draw("hist");
+   tkr_1e->Draw("histsame");
    stde->Draw("same");
 
    leg02->Draw();
