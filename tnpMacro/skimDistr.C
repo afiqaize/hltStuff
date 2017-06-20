@@ -1,36 +1,39 @@
 // For skimming the trees created by plotDistr
-// Usage: root -l skimDistr.C
+// Usage: root -l skimDistr.C++
+
+#include <cmath>
 
 #include "TFile.h"
 #include "TTree.h"
-#include "TMath.h"
+#include "TH1D.h"
 #include "TROOT.h"
 
 #include "hltWP.cxx"
 
 double deltaPhi(const double phi1, const double phi2) {
-  double dp = TMath::ACos( TMath::Cos(phi1 - phi2) );
+  double dp = std::acos( std::cos(phi1 - phi2) );
   return dp;
 }
 
 double deltaR(const double eta1, const double phi1, const double eta2, const double phi2) {
-  return TMath::Sqrt( TMath::Sq(eta1 - eta2) + TMath::Sq(deltaPhi(phi1, phi2)) );
+  return std::sqrt( std::pow(eta1 - eta2, 2.) + std::pow( deltaPhi(phi1, phi2), 2.) );
 }
  
 void skimDistr() {
-  const std::string inDir = "";
-  const std::string outputFile = "skim.root";
+  const std::string inDir = "/home/afiqaize/Downloads/EGM/dev/e_90x/wpTune_110517/root/";
+  const std::string outputFile = "../skim_v1/skim_qcd_in.root";
 
   bool hasReco = false;
-  bool isMC = false;
+  bool isMC = true;
 
   TFile* outFile = new TFile((inDir + outputFile).c_str(), "recreate");
   TTree* outTree = new TTree("hltTree", "hltTree");
   outTree->SetAutoSave(500000000);
+  outTree->SetDirectory(outFile);
 
-  int nRun, nEvt, nLumi, nBX, nOrb, nSto, cand, npf, hlt_n, reco_n, gp_n, nVtx, mc_nBX, mc_nPUtrue, accPath, itype;
-  int passHLT[10], genMatch[10], mc_BX[100], mc_nPUobs[100], mishitspf[10], reco_mishits[10];
-  double rho, puWgt, genWgt, weight, epf[10], eRawpf[10], etpf[10], etRawpf[10], etapf[10], phipf[10];
+  int nRun, nEvt, nLumi, nBX, nOrb, nSto, cand, npf, hlt_n, reco_n, gp_n, nVtx, mc_nPUtrue, mc_nPUobs, accPath, itype;
+  int passHLT[10], genMatch[10], mishitspf[10], reco_mishits[10];
+  double rho, puWgt, genWgt, normWgt, epf[10], eRawpf[10], etpf[10], etRawpf[10], etapf[10], phipf[10];
   double sieiepf[10], dphipf[10], detapf[10], detaseedpf[10], hoepf[10];
   double ecalpf[10], hcalpf[10], tkisopf[10], eoppf[10], eopseedpf[10], ps2pf[10], chi2pf[10];
   double gp_pt[10], gp_eta[10], gp_phi[10];
@@ -41,8 +44,14 @@ void skimDistr() {
   double hlt_e[10], hlt_er[10], hlt_et[10], hlt_etr[10], hlt_eta[10], hlt_phi[10], hlt_hoe[10];
   double hlt_sie[10], hlt_dph[10], hlt_det[10], hlt_des[10], hlt_eop[10], hlt_esp[10], hlt_chi[10], hlt_mih[10];
   double hlt_eca[10], hlt_hca[10], hlt_tks[10], hlt_ps2[10];
+  double hlt_hoc0[10], hlt_ecc0[10], hlt_hcc0[10];
+  double hlt_hoc1[10], hlt_ecc1[10], hlt_hcc1[10];
+  double hlt_hoc2[10], hlt_ecc2[10], hlt_hcc2[10];
+  double hlt_hoc3[10], hlt_ecc3[10], hlt_hcc3[10];
   double reco_er[10], reco_etr[10], reco_sie[10],  reco_dph[10], reco_det[10], reco_des[10];
   double reco_eca[10], reco_hca[10], reco_tks[10], reco_chi[10], reco_mih[10];
+
+  TH1D *sumWgt, *sumEvt;
 
   outTree->Branch("nRun", &nRun, "nRun/I");
   outTree->Branch("nEvt", &nEvt, "nEvt/I");
@@ -75,10 +84,22 @@ void skimDistr() {
   outTree->Branch("hlt_ps2"  , hlt_ps2, "hlt_ps2[hlt_n]/D");
   outTree->Branch("hlt_chi" , hlt_chi, "hlt_chi[hlt_n]/D");
   outTree->Branch("hlt_mih" , hlt_mih, "hlt_mih[hlt_n]/D");
+  outTree->Branch("hlt_hoc0" , hlt_hoc0, "hlt_hoc0[hlt_n]/D");
+  outTree->Branch("hlt_ecc0" , hlt_ecc0, "hlt_ecc0[hlt_n]/D");
+  outTree->Branch("hlt_hcc0" , hlt_hcc0, "hlt_hcc0[hlt_n]/D");
+  outTree->Branch("hlt_hoc1" , hlt_hoc1, "hlt_hoc1[hlt_n]/D");
+  outTree->Branch("hlt_ecc1" , hlt_ecc1, "hlt_ecc1[hlt_n]/D");
+  outTree->Branch("hlt_hcc1" , hlt_hcc1, "hlt_hcc1[hlt_n]/D");
+  outTree->Branch("hlt_hoc2" , hlt_hoc2, "hlt_hoc2[hlt_n]/D");
+  outTree->Branch("hlt_ecc2" , hlt_ecc2, "hlt_ecc2[hlt_n]/D");
+  outTree->Branch("hlt_hcc2" , hlt_hcc2, "hlt_hcc2[hlt_n]/D");
+  outTree->Branch("hlt_hoc3" , hlt_hoc3, "hlt_hoc3[hlt_n]/D");
+  outTree->Branch("hlt_ecc3" , hlt_ecc3, "hlt_ecc3[hlt_n]/D");
+  outTree->Branch("hlt_hcc3" , hlt_hcc3, "hlt_hcc3[hlt_n]/D");
   outTree->Branch("passHLT" , passHLT, "passHLT[hlt_n]/I");
   outTree->Branch("genMatch", &genMatch, "genMatch[hlt_n]/I");
   outTree->Branch("itype"  , &itype, "itype/I");
-  outTree->Branch("weight" , &weight, "weight/D");
+  outTree->Branch("normWgt" , &normWgt, "normWgt/D");
 
   if (isMC) {
     outTree->Branch("genWgt", &genWgt, "genWgt/D");
@@ -86,10 +107,8 @@ void skimDistr() {
     outTree->Branch("gp_pt", gp_pt, "gp_pt[gp_n]/D");
     outTree->Branch("gp_eta", gp_eta, "gp_eta[gp_n]/D");
     outTree->Branch("gp_phi", gp_phi, "gp_phi[gp_n]/D");
-    outTree->Branch("mc_nBX", &mc_nBX, "mc_nBX/I");
-    outTree->Branch("mc_BX", mc_BX, "mc_BX[nBX]/I");
     outTree->Branch("mc_nPUtrue", &mc_nPUtrue, "mc_nPUtrue/I");
-    outTree->Branch("mc_nPUobs", mc_nPUobs, "mc_nPUobs[nBX]/I");
+    outTree->Branch("mc_nPUobs", &mc_nPUobs, "mc_nPUobs/I");
   }
 
   if (hasReco) {
@@ -114,15 +133,42 @@ void skimDistr() {
     outTree->Branch("reco_mih" , reco_mih, "reco_mih[reco_n]/D");
   }
   
-  // MC vs data: weight = xsec_mc * intLumi_dat / nEvt_mc
-  const int proc = 1;
-  const int type[proc] = {1};
-  const float weights[proc] = {1.};
-  const char* names[proc] = {"sinEle23_loo"};
-    
+  // MC vs data: normWgt = xsec_mc * intLumi_dat / nEvt_mc
+  // MC: normWgt = xsec * filtEff
+  //const int proc = 1;
+  //const int type[proc] = {1};
+  //const double weights[proc] = {1.};
+  //const char* names[proc] = {""};
+
+  // dy_m50 pt0, pt150
+  //const int proc = 2;
+  //const int type[proc] = {-1, -2};
+  //const double weights[proc] = {4954., 241.7};
+  //const char* names[proc] = {"dy_m50pt0", "dy_m50pt150"};
+
+  // tt, wev
+  //const int proc = 2;
+  //const int type[proc] = {-4, -3};
+  //const double weights[proc] = {730., 52790.};
+  //const char* names[proc] = {"tt", "wev"};
+
+  // qcd_in pt15, pt30, pt50, pt80, pt120, pt170, pt300, pt470
+  const int proc = 8;
+  const int type[proc] = {1, 2, 3, 4, 5, 6, 7, 8};
+  const double weights[proc] = {1.706e9, 1.518e8, 1.972e7, 2.734e6, 4.82e5, 1.139e5, 8.157e3, 6.467e2};
+  const char* names[proc] = {"qcd_in_pt15", "qcd_in_pt30", "qcd_in_pt50", "qcd_in_pt80",
+                             "qcd_in_pt120", "qcd_in_pt170", "qcd_in_pt300", "qcd_in_pt470"};
+
+  // qcd_em pt15, pt20, pt30, pt50, pt80, pt120
+  //const int proc = 6;
+  //const int type[proc] = {11, 12, 13, 14, 15, 16};
+  //const double weights[proc] = {1.27e9, 5.607e8, 1.392e8, 1.93e7, 2.805e6, 4.846e5}; // xsec
+  //const double weights[proc] = {1395730., 5820066., 7061616., 2128790., 496765.5, 73707.66}; // * filtEff
+  //const char* names[proc] = {"qcd_em_pt15", "qcd_em_pt20", "qcd_em_pt30", "qcd_em_pt50", "qcd_em_pt80", "qcd_em_pt120"};
+
   for (int nfiles = 0; nfiles < proc; nfiles++) {
     TFile* file = TFile::Open((inDir + names[nfiles] + ".root").c_str());
-    TTree* inTree = (TTree*)file->Get("tree");
+    TTree* inTree = (TTree*) file->Get("tree");
 
     inTree->SetBranchStatus("*"          , 0);
     inTree->SetBranchStatus("nRun"       , 1);
@@ -188,8 +234,6 @@ void skimDistr() {
     inTree->SetBranchAddress("mishitspf"  , mishitspf);
 
     if (isMC) {
-      inTree->SetBranchStatus("mc_nBX"     , 1);
-      inTree->SetBranchStatus("mc_BX"      , 1);
       inTree->SetBranchStatus("mc_nPUtrue" , 1);
       inTree->SetBranchStatus("mc_nPUobs"  , 1);
       inTree->SetBranchStatus("gevt_wgt", 1);
@@ -203,10 +247,8 @@ void skimDistr() {
       inTree->SetBranchAddress("gppt"    , gp_pt);
       inTree->SetBranchAddress("gpeta"   , gp_eta);
       inTree->SetBranchAddress("gpphi"   , gp_phi);
-      inTree->SetBranchAddress("mc_nBX"     , &mc_nBX);
-      inTree->SetBranchAddress("mc_BX"      , mc_BX);
       inTree->SetBranchAddress("mc_nPUtrue" , &mc_nPUtrue);
-      inTree->SetBranchAddress("mc_nPUobs"  , mc_nPUobs);
+      inTree->SetBranchAddress("mc_nPUobs"  , &mc_nPUobs);
     }
 
     if (hasReco) {
@@ -250,28 +292,40 @@ void skimDistr() {
       inTree->SetBranchAddress("reco_chi2"     , reco_chi2);
       inTree->SetBranchAddress("reco_mishits"  , reco_mishits);
     }
+
+    sumEvt = (TH1D*) file->Get("sumEvt");
+    sumWgt = (TH1D*) file->Get("sumWgt");
+
+    const double sumEvtWgt = sumWgt->GetBinContent(1);
     
     int entries = inTree->GetEntries();
     for (int z = 0; z < entries; z++) {
       inTree->GetEntry(z);
 
       if (z % 100000 == 1)
-        cout << z << " / " << entries << " done..." << endl;
+        std::cout << z << " / " << entries << " done..." << std::endl;
 
-      // check triggering of event first
+      // check presence of cands and triggering of event
+      if (npf < 1) continue;
       if (accPath != 1) continue;
 
       itype = type[nfiles];
-      weight = weights[nfiles];
-      puWgt = 1.;
       cand = 0;
+      puWgt = 1.;
+      normWgt = 1.;
+
+      if (isMC) {
+        normWgt = (weights[nfiles] * 1000.) / sumEvtWgt;
+      }
 
       for (int i = 0; i < npf; i++) {
-        // Incorrect usage, only to weed out defaults
-        //if (!checkCand("", -1, rho,
-        //               hlt_e, hlt_et, etapf[i], hlt_phi,
-        //               sieiepf[i], hoepf[i], ecalpf[i], hcalpf[i], eoppf[i],
-        //               chi2pf[i], (double) mishitspf[i], detaseedpf[i], dphipf[i], tkisopf[i])) continue;
+
+        // Weed out those not passing WPNone
+        if (!checkCand("", vNoMask, rho,
+                       epf[i], etpf[i], etapf[i], phipf[i],
+                       sieiepf[i], hoepf[i], ecalpf[i], hcalpf[i], eoppf[i],
+                       chi2pf[i], (double) mishitspf[i], detaseedpf[i], dphipf[i], tkisopf[i],
+                       ps2pf[i])) continue;
 
         passHLT[cand] = 0;
         genMatch[cand] = 0;
@@ -296,10 +350,27 @@ void skimDistr() {
 	hlt_chi[cand] = chi2pf[i];
         hlt_mih[cand] = (double) mishitspf[i];
 
-        if (checkCand("WPTight16", -1, rho,
-                       hlt_e[cand], hlt_et[cand], hlt_eta[cand], hlt_phi[cand],
-                       hlt_sie[cand], hlt_hoe[cand], hlt_eca[cand], hlt_hca[cand], hlt_eop[cand],
-                       hlt_chi[cand], hlt_mih[cand], hlt_des[cand], hlt_dph[cand], hlt_tks[cand]))
+	hlt_hoc0[cand] = doRhoCorrection(hlt_hoe[cand], hlt_et[cand], hlt_eta[cand], rho, "EA17_q0p95", "hoe");
+	hlt_ecc0[cand] = doRhoCorrection(hlt_eca[cand], hlt_et[cand], hlt_eta[cand], rho, "EA17_q0p95", "eca");
+	hlt_hcc0[cand] = doRhoCorrection(hlt_hca[cand], hlt_et[cand], hlt_eta[cand], rho, "EA17_q0p95", "hca");
+
+	hlt_hoc1[cand] = doRhoCorrection(hlt_hoe[cand], hlt_et[cand], hlt_eta[cand], rho, "EA17_q0p97", "hoe");
+	hlt_ecc1[cand] = doRhoCorrection(hlt_eca[cand], hlt_et[cand], hlt_eta[cand], rho, "EA17_q0p97", "eca");
+	hlt_hcc1[cand] = doRhoCorrection(hlt_hca[cand], hlt_et[cand], hlt_eta[cand], rho, "EA17_q0p97", "hca");
+
+	hlt_hoc2[cand] = doRhoCorrection(hlt_hoe[cand], hlt_et[cand], hlt_eta[cand], rho, "EANT17_q0p95", "hoe");
+	hlt_ecc2[cand] = doRhoCorrection(hlt_eca[cand], hlt_et[cand], hlt_eta[cand], rho, "EANT17_q0p95", "eca");
+	hlt_hcc2[cand] = doRhoCorrection(hlt_hca[cand], hlt_et[cand], hlt_eta[cand], rho, "EANT17_q0p95", "hca");
+
+	hlt_hoc3[cand] = doRhoCorrection(hlt_hoe[cand], hlt_et[cand], hlt_eta[cand], rho, "EANT17_q0p97", "hoe");
+	hlt_ecc3[cand] = doRhoCorrection(hlt_eca[cand], hlt_et[cand], hlt_eta[cand], rho, "EANT17_q0p97", "eca");
+	hlt_hcc3[cand] = doRhoCorrection(hlt_hca[cand], hlt_et[cand], hlt_eta[cand], rho, "EANT17_q0p97", "hca");
+
+        if (checkCand("Tight16", vNoMask, rho,
+                      hlt_e[cand], hlt_et[cand], hlt_eta[cand], hlt_phi[cand],
+                      hlt_sie[cand], hlt_hoe[cand], hlt_eca[cand], hlt_hca[cand], hlt_eop[cand],
+                      hlt_chi[cand], hlt_mih[cand], hlt_des[cand], hlt_dph[cand], hlt_tks[cand],
+                      hlt_ps2[cand]))
           passHLT[cand] = 1;
 
         if (isMC) {
@@ -318,7 +389,7 @@ void skimDistr() {
       }
 
       hlt_n = cand;
-      if (hlt_n < 2) continue;
+      if (hlt_n < 1) continue;
 
       if (hasReco) {
         for (int k = 0; k < reco_n; k++) {
