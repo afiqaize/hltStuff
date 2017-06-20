@@ -211,10 +211,8 @@ private:
   double gp_eta[10];
   double  gp_phi[10];
 
-  int mc_nBX;
-  int mc_BX[100];
   int mc_nPUtrue;
-  int mc_nPUobs[100];
+  int mc_nPUobs;
 
   bool isData;
   bool saveReco;
@@ -223,6 +221,7 @@ private:
   std::string evtAcc;
 
   TH1D *hitChi2EB, *hitChi2EE;
+  TH1D *sumWgt, *sumEvt;
 };
 
 void plotDistr::beginRun(const edm::Run& run,const edm::EventSetup& setup) {
@@ -235,7 +234,7 @@ void plotDistr::beginRun(const edm::Run& run,const edm::EventSetup& setup) {
 
 plotDistr::plotDistr(const edm::ParameterSet& iParSet) {
   outputFileName  = iParSet.getParameter<std::string>("OutputFileName");
-  isData          = iParSet.getParameter<bool>("isData");
+  //isData          = iParSet.getParameter<bool>("isData");
   saveReco        = iParSet.getParameter<bool>("saveReco");
   pathNames_      = iParSet.getParameter<std::vector<std::string> >("trgSelection");
   trigResultsTag_ = iParSet.getParameter<edm::InputTag>("trgResults");
@@ -272,6 +271,9 @@ plotDistr::plotDistr(const edm::ParameterSet& iParSet) {
   hitsTkn       = consumes<reco::RecoEcalCandidateIsolationMap>(edm::InputTag("hltEgammaGsfTrackVars:ValidHits"));
 
   rhoTkn        = consumes<double>(edm::InputTag("hltFixedGridRhoFastjetAllCaloForMuons"));
+
+  sumWgt = new TH1D("sumWgt", "", 1, 0.5, 1.5);
+  sumEvt = new TH1D("sumEvt", "", 1, 0.5, 1.5);
 
   hitChi2EB = new TH1D("hitChi2EB", "", 1000, 0., 1000.);
   hitChi2EE = new TH1D("hitChi2EE", "", 1000, 0., 1000.);
@@ -313,7 +315,7 @@ void plotDistr::mcTruth(edm::Handle<reco::GenParticleCollection> gpH) {
 
 void plotDistr::analyze(const edm::Event& iEvt, const edm::EventSetup& iSetup) {
 
-  //isData = iEvt.eventAuxiliary().isRealData(); // causes segfault ?_?
+  isData = iEvt.eventAuxiliary().isRealData(); // segfaults in 80X, not in 90X ?_?
   debug = false;
 
   nRun = iEvt.eventAuxiliary().run();
@@ -343,7 +345,7 @@ void plotDistr::analyze(const edm::Event& iEvt, const edm::EventSetup& iSetup) {
   edm::Handle<GenEventInfoProduct> gEvtH;
   edm::Handle<std::vector<PileupSummaryInfo> > puH;
 
-  mc_nBX = 0;
+  //mc_nBX = 0;
   gevt_wgt = 0.;
   if (!isData) {
     iEvt.getByToken(genTkn, gpH);
@@ -356,11 +358,19 @@ void plotDistr::analyze(const edm::Event& iEvt, const edm::EventSetup& iSetup) {
     std::vector<PileupSummaryInfo>::const_iterator pu;
 
     for(pu = puH->begin(); pu != puH->end(); ++pu) {
-      mc_BX[mc_nBX]      = pu->getBunchCrossing();
-      mc_nPUobs[mc_nBX]  = pu->getPU_NumInteractions();
-      mc_nBX++;
+      if (pu->getBunchCrossing() == 0) {
+        mc_nPUobs  = pu->getPU_NumInteractions();
+        break;
+      }
+      continue;
     }
+
+    sumWgt->Fill(1., gevt_wgt);
   }
+  else
+    sumWgt->Fill(1.);
+
+  sumEvt->Fill(1.);
 
   if (saveReco) {
 
@@ -656,7 +666,7 @@ void plotDistr::beginJob() {
   t->Branch("eoppf", eoppf, "eoppf[npf]/D");
   t->Branch("eopseedpf", eopseedpf, "eopseedpf[npf]/D");
   t->Branch("chi2pf", chi2pf, "chi2pf[npf]/D");
-  t->Branch("ps2pf", chi2pf, "ps2pf[npf]/D");
+  t->Branch("ps2pf", ps2pf, "ps2pf[npf]/D");
   t->Branch("mishitspf", mishitspf, "mishitspf[npf]/I");
   t->Branch("hitspf", hitspf, "hitspf[npf]/I");
 
@@ -688,16 +698,16 @@ void plotDistr::beginJob() {
     t->Branch("gppt", gp_pt, "gppt[gpn]/D");
     t->Branch("gpeta", gp_eta, "gpeta[gpn]/D");
     t->Branch("gpphi", gp_phi, "gpphi[gpn]/D");
-    t-> Branch("mc_nBX", &mc_nBX, "mc_nBX/I");
-    t-> Branch("mc_BX", mc_BX, "mc_BX[nBX]/I");
     t-> Branch("mc_nPUtrue", &mc_nPUtrue, "mc_nPUtrue/I");
-    t-> Branch("mc_nPUobs", mc_nPUobs, "mc_nPUobs[nBX]/I");
+    t-> Branch("mc_nPUobs", &mc_nPUobs, "mc_nPUobs/I");
   }
 }
 
 void plotDistr::endJob() {
   f->cd();
   t->Write();
+  sumWgt->Write();
+  sumEvt->Write();
   hitChi2EB->Write();
   hitChi2EE->Write();
   f->Close();
