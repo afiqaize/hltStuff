@@ -71,10 +71,11 @@ void axHist(TH1* vHist, double yMin, double yMax,
             std::string yTxt, double ySiz, double yOff, double yLab,
             std::string xTxt, double xSiz, double xOff, double xLab) {
 
-  if (yMin != -999. and yMax != -999.) { 
+  if (yMin != -999.)
     vHist->SetMinimum(yMin);
+
+  if (yMax != -999.)
     vHist->SetMaximum(yMax);
-  }
 
    vHist->SetYTitle(yTxt.c_str());
    vHist->GetYaxis()->SetTitleSize(ySiz);

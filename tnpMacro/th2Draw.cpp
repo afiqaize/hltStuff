@@ -42,7 +42,7 @@ void th2Draw(const std::string& run = "v3_3pp", const std::string& var = "passHL
   TFile *inPut = TFile::Open((inDir + run + "/" +  typ + "/" + var + "/eff2D.root").c_str());
 
   TH2 *th2 = (TH2*) inPut->Get((sam + "2c_eff").c_str());
-  axHist((TH1*) th2, -999., -999., yTxt, 0.037, 1.19, 0.033, xTxt, 0.037, 1.19, 0.033);
+  axHist((TH1*) th2, th2->GetMinimum(0.), -999., yTxt, 0.037, 1.19, 0.033, xTxt, 0.037, 1.19, 0.033);
   th2->GetZaxis()->SetLabelSize(0.019);
 
   //gStyle->SetStatX(0.89);
