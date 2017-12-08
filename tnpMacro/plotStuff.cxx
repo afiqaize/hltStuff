@@ -174,8 +174,10 @@ void createEBEERatioPlot(std::pair <std::string, std::string>* pairFileLeg,
                          std::string fName, std::string xName,
                          std::string yName, std::string sName,
                          bool drawLog, int maxAx,
-                         double yMin_b, double yMax_b,
-                         double yMin_e, double yMax_e) {
+                         double yMin_b = 0., double yMax_b = 99999.,
+                         double yMin_e = 0., double yMax_e = 99999.,
+                         double sMin_b = 0., double sMax_b = 99999.,
+                         double sMin_e = 0., double sMax_e = 99999.) {
   const std::string hName(h_b[0]->GetName());
 
   for (int iH = 0; iH < nH; iH++) {
@@ -196,8 +198,8 @@ void createEBEERatioPlot(std::pair <std::string, std::string>* pairFileLeg,
   if (maxAx != -1) TGaxis::SetMaxDigits(maxAx);
   else TGaxis::SetMaxDigits(5);
 
-  std::cout << h_b[0]->GetEntries() << " " << h_b[1]->GetEntries() << " " << h_b[2]->GetEntries() << std::endl;
-  std::cout << h_e[0]->GetEntries() << " " << h_e[1]->GetEntries() << " " << h_e[2]->GetEntries() << std::endl;
+  //std::cout << h_b[0]->GetEntries() << " " << h_b[1]->GetEntries() << " " << h_b[2]->GetEntries() << std::endl;
+  //std::cout << h_e[0]->GetEntries() << " " << h_e[1]->GetEntries() << " " << h_e[2]->GetEntries() << std::endl;
 
   const int hb_nBin = h_b[0]->GetNbinsX(), he_nBin = h_e[0]->GetNbinsX();
   const double hb_min = h_b[0]->GetBinLowEdge(1), hb_max = h_b[0]->GetBinLowEdge(hb_nBin) + h_b[0]->GetBinWidth(hb_nBin);
@@ -229,15 +231,17 @@ void createEBEERatioPlot(std::pair <std::string, std::string>* pairFileLeg,
 
   TH1D *sfb[nH], *sfe[nH];
   for (int iH = 0; iH < nH; iH++) {
-    sfb[iH] = new TH1D("", "", hb_nBin, hb_min, hb_max);
+    sfb[iH] = (TH1D*) h_b[0]->Clone();
+    sfb[iH]->Reset();
     sfb[iH]->Divide(h_b[iH], h_b[0], 1., 1., "B");
     styleHist(sfb[iH], h_b[iH]->GetLineColor(), h_b[iH]->GetFillStyle(), h_b[iH]->GetMarkerStyle(), 1, 1.0);
-    axHist(sfb[iH], 0.001, 1.999, sName, 0.061, 0.49, 0.059, xName, 0.077, 0.95, 0.073);
+    axHist(sfb[iH], sMin_b, sMax_b, sName, 0.061, 0.49, 0.059, xName, 0.077, 0.95, 0.073);
 
-    sfe[iH] = new TH1D("", "", he_nBin, he_min, he_max);
+    sfe[iH] = (TH1D*) h_e[0]->Clone();
+    sfe[iH]->Reset();
     sfe[iH]->Divide(h_e[iH], h_e[0], 1., 1., "B");
     styleHist(sfe[iH], h_e[iH]->GetLineColor(), h_e[iH]->GetFillStyle(), h_e[iH]->GetMarkerStyle(), 1, 1.0);
-    axHist(sfe[iH], 0.001, 1.999, sName, 0.061, 0.49, 0.059, xName, 0.077, 0.95, 0.073);
+    axHist(sfe[iH], sMin_e, sMax_e, sName, 0.061, 0.49, 0.059, xName, 0.077, 0.95, 0.073);
   }
 
   // -------------------------------------------------- //
@@ -406,8 +410,8 @@ void createEBEEPlot(std::pair <std::string, std::string>* pairFileLeg,
 
   std::string bHead =  "", eHead = "";
   if (hName.find("eta_") == std::string::npos) {
-    bHead = "#left|#eta^{e}#right| < " + toStr(etaEB);
-    eHead = toStr(etaET) + " < #left|#eta^{e}#right| < " + toStr(etaEE);
+    bHead = "#left|#eta^{SC}#right| < " + toStr(etaEB);
+    eHead = toStr(etaET) + " < #left|#eta^{SC}#right| < " + toStr(etaEE);
   }
 
   TLegend *bLeg, *eLeg;
@@ -438,10 +442,10 @@ void createEBEEPlot(std::pair <std::string, std::string>* pairFileLeg,
   TCanvas *c01 = new TCanvas("c01", "c01", 200, 10, 1000, 1000);
   TCanvas *c02 = new TCanvas("c02", "c02", 200, 10, 1000, 1000);
 
-  styleLeg(bLeg, 3, 0, 0, 42, 0.033, lHead + bHead);
+  styleLeg(bLeg, 1, 0, 0, 42, 0.033, lHead + bHead);
   putLeg(bLeg, 0.635, 0.955, 0.695, 0.875);
 
-  styleLeg(eLeg, 3, 0, 0, 42, 0.033, lHead + eHead);
+  styleLeg(eLeg, 1, 0, 0, 42, 0.033, lHead + eHead);
   putLeg(eLeg, 0.635, 0.955, 0.695, 0.875);
 
   c01->cd();

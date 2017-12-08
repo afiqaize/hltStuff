@@ -507,7 +507,7 @@ double getThr(const std::string& setWP, const double& et, const double& eta, con
   }
 
   // WPNone with H/E cut in pixmatch
-  else
+  else if (setWP == "WPNone")
     vThr["hor"] = 0.2;
 
   if ( vThr.count(sThr) == 1 )
@@ -515,7 +515,7 @@ double getThr(const std::string& setWP, const double& et, const double& eta, con
   else if (vThr.count(sThr) == 0 and sThr.compare(2, 1, "_") == 0)
     return 0.; // correction term nonexising; return 0.
   else
-    return 999.;
+    return 9999.;
 }
 
 
