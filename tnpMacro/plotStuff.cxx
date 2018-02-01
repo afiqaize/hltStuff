@@ -23,7 +23,7 @@
 
 // ------- Utility methods ------- //
 
-std::string topLeft = "#bf{CMS} #it{Preliminary}", topRight = "Many fb^{-1} (13 TeV)";
+std::string topLeft = "#bf{CMS} #it{Really Cool Stuff}", topRight = "Many fb^{-1} (13 TeV)";
 
 
 
@@ -702,6 +702,75 @@ void createEBEEEffPlot(std::pair <std::string, std::string>* pairFileLeg,
   c04->SaveAs((fName + vName + "_gRoc_ee.C").c_str());
 
   c03->Close(); c04->Close();
+}
+
+
+
+void createPlot(std::pair <std::string, std::string>* pairFileLeg,
+                std::string vName, TH1** hist, const int nH, const std::vector<int> v_ignoreHist,
+                std::string lHead, bool doNorm, double normScale,
+                std::string fName, std::string xName,
+                std::string yName,
+                bool drawLog, int maxAx, int lCol,
+                double yMin, double yMax) {
+  const std::string hName(hist[0]->GetName());
+
+  for (int iH = 0; iH < nH; iH++) {
+    // assign -999. as unit area normalization
+    // if index of histogram is in v_ignoreHist then we skip
+    if (std::find(v_ignoreHist.begin(), v_ignoreHist.end(), iH) != v_ignoreHist.end()) continue;
+
+    if (doNorm && normScale == -999.)
+      hist[iH]->Scale( 1. / std::abs(hist[iH]->Integral()) );
+    else if (doNorm && normScale != -999.)
+      hist[iH]->Scale( normScale );
+  }
+
+  if (yName == "") yName = "e / bin";
+
+  if (maxAx != -1) TGaxis::SetMaxDigits(maxAx);
+  else TGaxis::SetMaxDigits(5);
+
+  axHist(hist[0], yMin, yMax, yName, 0.033, 0.87, 0.025, xName, 0.033, 0.87, 0.025);
+
+  TLatex txt;
+  txt.SetTextSize(0.035);
+  txt.SetTextAlign(13);
+
+  TLegend *aLeg;
+  aLeg = new TLegend();
+
+  std::string sLeg;
+  for (int iH = 0; iH < nH; iH++) {
+    sLeg = "lp";
+    aLeg->AddEntry(hist[iH], (pairFileLeg[iH].second).c_str(), sLeg.c_str());
+  }
+
+  // -------------------------------------------------- //
+
+  TCanvas *c01 = new TCanvas("c01", "c01", 200, 10, 1000, 1000);
+
+  styleLeg(aLeg, lCol, 0, 0, 42, 0.029, lHead);
+  putLeg(aLeg, 0.535, 0.955, 0.695, 0.875);
+
+  c01->cd();
+  if (drawLog) c01->SetLogy();
+  for (int iH = 0; iH < nH; iH++) {
+    if (iH == 0) hist[iH]->Draw("hist e2");
+    else hist[iH]->Draw("hist e2 same");
+  }
+
+  aLeg->Draw();
+  txt.DrawLatexNDC(0.06, 0.928, topLeft.c_str());
+  txt.DrawLatexNDC(0.703, 0.933, topRight.c_str());
+
+  // -------------------------------------------------- //
+
+  c01->cd();
+  c01->SaveAs((fName + vName + "_hist.pdf").c_str());
+  c01->SaveAs((fName + vName + "_hist.C").c_str());
+
+  c01->Close();
 }
 
 
