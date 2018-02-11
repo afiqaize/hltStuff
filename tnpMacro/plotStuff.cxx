@@ -21,9 +21,13 @@
 #include "TLatex.h"
 #include "TGraphAsymmErrors.h"
 
+#include "TH2.h"
+
+#include "/home/afiqaize/root53434/macros/tdrstyle.C"
+
 // ------- Utility methods ------- //
 
-std::string topLeft = "#bf{CMS} #it{Really Cool Stuff}", topRight = "Many fb^{-1} (13 TeV)";
+std::string topLeft = "#bf{CMS} #it{Cool Stuff}", topRight = "Many fb^{-1} (13 TeV)";
 
 
 
@@ -36,10 +40,28 @@ bool replace(std::string &str, const std::string &from, const std::string &to) {
 }
 
 
+
+void printStat(TH1* vHist) {
+  std::cout << vHist->GetName() << " entry: " << vHist->GetEntries() << " mean: " <<  vHist->GetMean() << " RMS: " << vHist->GetRMS() << std::endl;
+}
+
+
 // ------- Styling methods ------- //
 
 std::string toStr(double inNo) { std::ostringstream outStr; outStr << inNo; return outStr.str(); }
 std::string toStr(int inNo) { std::ostringstream outStr; outStr << inNo; return outStr.str(); }
+
+
+
+void setHH2Style() {
+  gStyle->SetPalette();
+  gStyle->SetOptStat(0);
+
+  /*gStyle->SetPadTopMargin(0.1);
+    gStyle->SetPadBottomMargin(0.15);*/
+  gStyle->SetPadLeftMargin(-0.3);
+  gStyle->SetPadRightMargin(0.1);
+}
 
 
 
@@ -70,7 +92,6 @@ void styleGr(TGraph* vGr, int useCol, int filSty, int marSty, int marSiz, double
 void axHist(TH1* vHist, double yMin, double yMax,
             std::string yTxt, double ySiz, double yOff, double yLab,
             std::string xTxt, double xSiz, double xOff, double xLab) {
-
   if (yMin != -999.)
     vHist->SetMinimum(yMin);
 
@@ -180,6 +201,7 @@ void createEBEERatioPlot(std::pair <std::string, std::string>* pairFileLeg,
                          double sMin_b = 0., double sMax_b = 99999.,
                          double sMin_e = 0., double sMax_e = 99999.) {
   const std::string hName(h_b[0]->GetName());
+  setTDRStyle();
 
   for (int iH = 0; iH < nH; iH++) {
     // assign -999. as unit area normalization
@@ -384,6 +406,7 @@ void createEBEEPlot(std::pair <std::string, std::string>* pairFileLeg,
                     double yMin_b, double yMax_b,
                     double yMin_e, double yMax_e) {
   const std::string hName(h_b[0]->GetName());
+  setTDRStyle();
 
   for (int iH = 0; iH < nH; iH++) {
     // assign -999. as unit area normalization
@@ -500,6 +523,7 @@ void createEBEEEffPlot(std::pair <std::string, std::string>* pairFileLeg,
                        double yMin_b, double yMax_b,
                        double yMin_e, double yMax_e) {
   const std::string hName(h_b[0]->GetName());
+  setTDRStyle();
 
   for (int iH = 0; iH < nH; iH++) {
     // assign -999. as unit area normalization
@@ -714,6 +738,7 @@ void createPlot(std::pair <std::string, std::string>* pairFileLeg,
                 bool drawLog, int maxAx, int lCol,
                 double yMin, double yMax) {
   const std::string hName(hist[0]->GetName());
+  setTDRStyle();
 
   for (int iH = 0; iH < nH; iH++) {
     // assign -999. as unit area normalization
@@ -724,7 +749,10 @@ void createPlot(std::pair <std::string, std::string>* pairFileLeg,
       hist[iH]->Scale( 1. / std::abs(hist[iH]->Integral()) );
     else if (doNorm && normScale != -999.)
       hist[iH]->Scale( normScale );
+
+    printStat(hist[iH]);
   }
+  std::cout << std::endl;
 
   if (yName == "") yName = "e / bin";
 
@@ -769,6 +797,50 @@ void createPlot(std::pair <std::string, std::string>* pairFileLeg,
   c01->cd();
   c01->SaveAs((fName + vName + "_hist.pdf").c_str());
   c01->SaveAs((fName + vName + "_hist.C").c_str());
+
+  c01->Close();
+}
+
+
+
+void createTH2(std::string vName, TH2* hist,
+               bool doNorm, double normScale,
+               std::string fName, std::string xName,
+               std::string yName,
+               bool drawLog, int maxAx,
+               double yMin, double yMax) {
+  const std::string hName(hist->GetName());
+  setHH2Style();
+
+  if (doNorm && normScale == -999.)
+    hist->Scale( 1. / std::abs(hist->Integral()) );
+  else if (doNorm && normScale != -999.)
+    hist->Scale( normScale );
+
+  if (yName == "") yName = "e / bin";
+
+  if (maxAx != -1) TGaxis::SetMaxDigits(maxAx);
+  else TGaxis::SetMaxDigits(5);
+
+  TLatex txt;
+  txt.SetTextSize(0.035);
+  txt.SetTextAlign(13);
+
+  TCanvas *c01 = new TCanvas("c01", "c01", 200, 10, 1000, 1000);
+
+  c01->cd();
+  if (drawLog) c01->SetLogz();
+  axHist(hist, yMin, yMax, yName, 0.037, 1.19, 0.033, xName, 0.037, 1.07, 0.033);
+  hist->GetZaxis()->SetLabelSize(0.021);
+
+  hist->Draw("colz");
+
+  txt.DrawLatexNDC(0.1, 0.928, topLeft.c_str());
+  txt.DrawLatexNDC(0.643, 0.933, topRight.c_str());
+
+  c01->SaveAs((fName + vName + "_cmap.pdf").c_str());
+  c01->SaveAs((fName + vName + "_cmap.C").c_str());
+  c01->Clear();
 
   c01->Close();
 }
