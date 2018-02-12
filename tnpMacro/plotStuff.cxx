@@ -27,8 +27,8 @@
 
 // ------- Utility methods ------- //
 
-std::string topLeft = "#bf{CMS} #it{Cool Stuff}", topRight = "Many fb^{-1} (13 TeV)";
-
+//const std::string topLeft = "#bf{CMS} #it{Cool Stuff}", topRight = "Many fb^{-1} (13 TeV)";
+const std::string topLeft = "", topRight = "";
 
 
 bool replace(std::string &str, const std::string &from, const std::string &to) {
