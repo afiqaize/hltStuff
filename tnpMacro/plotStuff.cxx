@@ -740,10 +740,14 @@ void createPlot(std::pair <std::string, std::string>* pairFileLeg,
   const std::string hName(hist[0]->GetName());
   setTDRStyle();
 
+  int iFirst = 0;
   for (int iH = 0; iH < nH; iH++) {
     // assign -999. as unit area normalization
     // if index of histogram is in v_ignoreHist then we skip
-    if (std::find(v_ignoreHist.begin(), v_ignoreHist.end(), iH) != v_ignoreHist.end()) continue;
+    if (std::find(v_ignoreHist.begin(), v_ignoreHist.end(), iH) != v_ignoreHist.end()) {
+      ++iFirst;
+      continue;
+    }
 
     if (doNorm && normScale == -999.)
       hist[iH]->Scale( 1. / std::abs(hist[iH]->Integral()) );
@@ -759,7 +763,7 @@ void createPlot(std::pair <std::string, std::string>* pairFileLeg,
   if (maxAx != -1) TGaxis::SetMaxDigits(maxAx);
   else TGaxis::SetMaxDigits(5);
 
-  axHist(hist[0], yMin, yMax, yName, 0.033, 0.87, 0.025, xName, 0.033, 0.87, 0.025);
+  axHist(hist[iFirst], yMin, yMax, yName, 0.033, 0.89, 0.023, xName, 0.037, 0.97, 0.027);
 
   TLatex txt;
   txt.SetTextSize(0.035);
@@ -770,6 +774,7 @@ void createPlot(std::pair <std::string, std::string>* pairFileLeg,
 
   std::string sLeg;
   for (int iH = 0; iH < nH; iH++) {
+    if (std::find(v_ignoreHist.begin(), v_ignoreHist.end(), iH) != v_ignoreHist.end()) continue;
     sLeg = "lp";
     aLeg->AddEntry(hist[iH], (pairFileLeg[iH].second).c_str(), sLeg.c_str());
   }
@@ -779,11 +784,14 @@ void createPlot(std::pair <std::string, std::string>* pairFileLeg,
   TCanvas *c01 = new TCanvas("c01", "c01", 200, 10, 1000, 1000);
 
   styleLeg(aLeg, lCol, 0, 0, 42, 0.029, lHead);
-  putLeg(aLeg, 0.535, 0.955, 0.695, 0.875);
+  //putLeg(aLeg, 0.535, 0.955, 0.695, 0.875); // right
+  putLeg(aLeg, 0.115, 0.575, 0.695, 0.875); // left
 
   c01->cd();
   if (drawLog) c01->SetLogy();
   for (int iH = 0; iH < nH; iH++) {
+    if (std::find(v_ignoreHist.begin(), v_ignoreHist.end(), iH) != v_ignoreHist.end()) continue;
+
     if (iH == 0) hist[iH]->Draw("hist e2");
     else hist[iH]->Draw("hist e2 same");
   }
