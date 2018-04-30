@@ -257,13 +257,13 @@ void createEBEERatioPlot(std::pair <std::string, std::string>* pairFileLeg,
     sfb[iH] = (TH1D*) h_b[0]->Clone();
     sfb[iH]->Reset();
     sfb[iH]->Divide(h_b[iH], h_b[0], 1., 1., "B");
-    styleHist(sfb[iH], h_b[iH]->GetLineColor(), h_b[iH]->GetFillStyle(), h_b[iH]->GetMarkerStyle(), 1, 1.0);
+    styleHist(sfb[iH], h_b[iH]->GetLineColor(), h_b[iH]->GetFillStyle(), h_b[iH]->GetMarkerStyle(), h_b[iH]->GetMarkerSize(), h_b[iH]->GetLineWidth());
     axHist(sfb[iH], sMin_b, sMax_b, sName, 0.061, 0.49, 0.059, xName, 0.077, 0.95, 0.073);
 
     sfe[iH] = (TH1D*) h_e[0]->Clone();
     sfe[iH]->Reset();
     sfe[iH]->Divide(h_e[iH], h_e[0], 1., 1., "B");
-    styleHist(sfe[iH], h_e[iH]->GetLineColor(), h_e[iH]->GetFillStyle(), h_e[iH]->GetMarkerStyle(), 1, 1.0);
+    styleHist(sfe[iH], h_e[iH]->GetLineColor(), h_e[iH]->GetFillStyle(), h_e[iH]->GetMarkerStyle(), h_b[iH]->GetMarkerSize(), h_b[iH]->GetLineWidth());
     axHist(sfe[iH], sMin_e, sMax_e, sName, 0.061, 0.49, 0.059, xName, 0.077, 0.95, 0.073);
   }
 
@@ -730,13 +730,141 @@ void createEBEEEffPlot(std::pair <std::string, std::string>* pairFileLeg,
 
 
 
+void createRatioPlot(std::pair <std::string, std::string>* pairFileLeg,
+                     std::string vName, TH1** hist, const int nH, const std::vector<int> v_ignoreHist,
+                     std::string lHead, bool doNorm, double normScale,
+                     std::string fName, std::string xName,
+                     std::string yName, std::string sName,
+                     bool drawLog, int maxAx, int lCol,
+                     double yMin = 0., double yMax = 99999.,
+                     double sMin = 0.8001, double sMax = 1.1999) {
+  const std::string hName(hist[0]->GetName());
+  setTDRStyle();
+
+  int iFirst = 0;
+  for (int iH = 0; iH < nH; iH++) {
+    // assign -999. as unit area normalization
+    // if index of histogram is in v_ignoreHist then we skip
+    if (std::find(v_ignoreHist.begin(), v_ignoreHist.end(), iH) != v_ignoreHist.end()) {
+      ++iFirst;
+      continue;
+    }
+
+    if (doNorm && normScale == -999.)
+      hist[iH]->Scale( 1. / std::abs(hist[iH]->Integral()) );
+    else if (doNorm && normScale != -999.)
+      hist[iH]->Scale( normScale );
+
+    printStat(hist[iH]);
+  }
+  std::cout << std::endl;
+
+  if (yName == "") yName = "e / bin";
+  if (sName == "") sName = "Ratio to " + pairFileLeg[iFirst].second;
+
+  if (maxAx != -1) TGaxis::SetMaxDigits(maxAx);
+  else TGaxis::SetMaxDigits(5);
+
+  const int nBin = hist[iFirst]->GetNbinsX();
+  const double hMin = hist[iFirst]->GetBinLowEdge(1), hMax =  hist[iFirst]->GetBinLowEdge(nBin) + hist[iFirst]->GetBinWidth(nBin);
+  const double sStep = hist[iFirst]->GetBinWidth(1);
+  double l1[nBin + 1], var_x[nBin + 1];
+
+  for (int iB = 0; iB < nBin + 1; iB++) {
+    l1[iB] = 1.;
+    var_x[iB] = (iB * sStep) + hMin;
+  }
+
+  TGraph *line1 = new TGraph(nBin + 1, var_x, l1);
+  line1->SetLineColor(kGray + 2);
+  line1->SetLineWidth(2);
+  line1->SetLineStyle(5);
+
+  TH1D *sf[nH];
+  for (int iH = 0; iH < nH; iH++) {
+    if (std::find(v_ignoreHist.begin(), v_ignoreHist.end(), iH) != v_ignoreHist.end()) continue;
+
+    sf[iH] = (TH1D*) hist[iFirst]->Clone();
+    sf[iH]->Reset();
+    sf[iH]->Divide(hist[iH], hist[iFirst], 1., 1., "B");
+    styleHist(sf[iH], hist[iH]->GetLineColor(), hist[iH]->GetFillStyle(), hist[iH]->GetMarkerStyle(), hist[iH]->GetMarkerSize(), hist[iH]->GetLineWidth());
+    axHist(sf[iH], sMin, sMax, sName, 0.061, 0.49, 0.059, xName, 0.077, 0.95, 0.073);
+  }
+
+  axHist(hist[iFirst], yMin, yMax, yName, 0.033, 0.89, 0.023, xName, 0.037, 0.97, 0.027);
+
+  TLatex txt;
+  txt.SetTextSize(0.035);
+  txt.SetTextAlign(13);
+
+  TLegend *aLeg;
+  aLeg = new TLegend();
+
+  std::string sLeg;
+  for (int iH = 0; iH < nH; iH++) {
+    if (std::find(v_ignoreHist.begin(), v_ignoreHist.end(), iH) != v_ignoreHist.end()) continue;
+    sLeg = "lp";
+    aLeg->AddEntry(hist[iH], (pairFileLeg[iH].second).c_str(), sLeg.c_str());
+  }
+
+  // -------------------------------------------------- //
+
+  TCanvas *c01 = new TCanvas("c01", "c01", 200, 10, 1000, 1000);
+
+  styleLeg(aLeg, lCol, 0, 0, 42, 0.029, lHead);
+  //putLeg(aLeg, 0.535, 0.955, 0.695, 0.875); // right
+  putLeg(aLeg, 0.095, 0.475, 0.695, 0.875); // left
+
+  c01->cd();
+  TPad *pad1 = new TPad("pad1", "pad1", 0., 0.29, 1., 1.);
+  pad1->SetBottomMargin(0);
+  pad1->Draw();
+  pad1->cd();
+
+  if (drawLog) pad1->SetLogy();
+  for (int iH = 0; iH < nH; iH++) {
+    if (std::find(v_ignoreHist.begin(), v_ignoreHist.end(), iH) != v_ignoreHist.end()) continue;
+
+    if (iH == 0) hist[iH]->Draw("hist e2");
+    else hist[iH]->Draw("hist e2 same");
+  }
+
+  aLeg->Draw();
+  txt.DrawLatexNDC(0.06, 0.928, topLeft.c_str());
+  txt.DrawLatexNDC(0.703, 0.933, topRight.c_str());
+
+  c01->cd();
+  TPad *pad2 = new TPad("pad2", "pad2", 0., 0., 1., 0.29);
+  pad2->SetTopMargin(0);
+  pad2->SetBottomMargin(0.16);
+  pad2->Draw();
+  pad2->cd();
+
+  sf[iFirst]->Draw("pe");
+  line1->Draw("lsame");
+  for (int iH = iFirst + 1; iH < nH; iH++) {
+    if (std::find(v_ignoreHist.begin(), v_ignoreHist.end(), iH) != v_ignoreHist.end()) continue;
+    sf[iH]->Draw("pesame");
+  }
+
+  // -------------------------------------------------- //
+
+  c01->cd();
+  c01->SaveAs((fName + vName + "_hist.pdf").c_str());
+  c01->SaveAs((fName + vName + "_hist.C").c_str());
+
+  c01->Close();
+}
+
+
+
 void createPlot(std::pair <std::string, std::string>* pairFileLeg,
                 std::string vName, TH1** hist, const int nH, const std::vector<int> v_ignoreHist,
                 std::string lHead, bool doNorm, double normScale,
                 std::string fName, std::string xName,
                 std::string yName,
                 bool drawLog, int maxAx, int lCol,
-                double yMin, double yMax) {
+                double yMin = 0., double yMax = 99999.) {
   const std::string hName(hist[0]->GetName());
   setTDRStyle();
 
@@ -785,7 +913,7 @@ void createPlot(std::pair <std::string, std::string>* pairFileLeg,
 
   styleLeg(aLeg, lCol, 0, 0, 42, 0.029, lHead);
   //putLeg(aLeg, 0.535, 0.955, 0.695, 0.875); // right
-  putLeg(aLeg, 0.115, 0.575, 0.695, 0.875); // left
+  putLeg(aLeg, 0.095, 0.475, 0.695, 0.875); // left
 
   c01->cd();
   if (drawLog) c01->SetLogy();
