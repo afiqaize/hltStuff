@@ -746,7 +746,7 @@ void createRatioPlot(std::pair <std::string, std::string>* pairFileLeg,
     // assign -999. as unit area normalization
     // if index of histogram is in v_ignoreHist then we skip
     if (std::find(v_ignoreHist.begin(), v_ignoreHist.end(), iH) != v_ignoreHist.end()) {
-      ++iFirst;
+      if (iFirst < iH) ++iFirst;
       continue;
     }
 
@@ -822,11 +822,11 @@ void createRatioPlot(std::pair <std::string, std::string>* pairFileLeg,
   pad1->cd();
 
   if (drawLog) pad1->SetLogy();
-  for (int iH = 0; iH < nH; iH++) {
+  hist[iFirst]->Draw("hist e2");
+  for (int iH = iFirst + 1; iH < nH; iH++) {
     if (std::find(v_ignoreHist.begin(), v_ignoreHist.end(), iH) != v_ignoreHist.end()) continue;
 
-    if (iH == 0) hist[iH]->Draw("hist e2");
-    else hist[iH]->Draw("hist e2 same");
+    hist[iH]->Draw("hist e2 same");
   }
 
   aLeg->Draw();
@@ -873,7 +873,7 @@ void createPlot(std::pair <std::string, std::string>* pairFileLeg,
     // assign -999. as unit area normalization
     // if index of histogram is in v_ignoreHist then we skip
     if (std::find(v_ignoreHist.begin(), v_ignoreHist.end(), iH) != v_ignoreHist.end()) {
-      ++iFirst;
+      if (iFirst < iH) ++iFirst;
       continue;
     }
 
@@ -917,11 +917,11 @@ void createPlot(std::pair <std::string, std::string>* pairFileLeg,
 
   c01->cd();
   if (drawLog) c01->SetLogy();
-  for (int iH = 0; iH < nH; iH++) {
-    if (std::find(v_ignoreHist.begin(), v_ignoreHist.end(), iH) != v_ignoreHist.end()) continue;
 
-    if (iH == 0) hist[iH]->Draw("hist e2");
-    else hist[iH]->Draw("hist e2 same");
+  hist[iFirst]->Draw("hist e2");
+  for (int iH = iFirst + 1; iH < nH; iH++) {
+    if (std::find(v_ignoreHist.begin(), v_ignoreHist.end(), iH) != v_ignoreHist.end()) continue;
+    hist[iH]->Draw("hist e2 same");
   }
 
   aLeg->Draw();
